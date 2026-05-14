@@ -1,0 +1,42 @@
+# ===== Dependencies & Build =====
+node_modules/
+dist/
+*.log
+.vite/
+
+# ===== Editor / OS =====
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ===== Working files (NOT for the public web app) =====
+OLD TRAINING MATERIAL/
+TRAINING CONTENT/
+TRANSCRIPTS_NEW/
+WISSENS FILES/
+_docx_extract/
+.claude/
+
+# ===== Master sources (too big or sensitive) =====
+All Slides to  use.pptx
+*.xlsx
+*.docx
+
+# ===== Large assets (>100 MB, GitHub will reject) =====
+# These need to be deployed separately (Netlify drag-drop, R2, etc).
+# Keep them locally; they're loaded into the build's dist/ folder via vite.
+public/course-materials/beauty/Schulungsfolien_Beauty.pptx
+public/course-materials/detox/Schulungsfolien_Detox.pptx
+public/course-materials/gene-diet/01-wissenschaftliche-basis/course/DEMO_NUTRITION_PLAN.pdf
+public/course-materials/gene-diet/01-wissenschaftliche-basis/course/POWERPOINT_Die_Gen-Diaet.pptx
+public/course-materials/nutrition/Demo_NovoDaily_Nutrition_Plan.pdf
+public/course-materials/nutrition/Schulungsfolien_Nutrition.pptx
+public/course-materials/performance/Demo_Performance_Trainingsplan.pdf
+public/course-materials/performance/Schulungsfolien_Performance.pptx
+public/course-materials/supplements/Schulungsfolien_Supplements.pptx
+
+# ===== Misc =====
+*.pyc
+__pycache__/
