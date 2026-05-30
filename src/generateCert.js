@@ -15,14 +15,17 @@ const A4_H = 841.89
 const COLOR_WINE = rgb(0x5e / 255, 0x00 / 255, 0x47 / 255)
 const COLOR_BLACK = rgb(0.10, 0.10, 0.10)
 
-/* Load all five Montserrat weights once; cache the bytes for re-use. */
+/* Load all five Montserrat weights once; cache the bytes for re-use.
+   BASE_URL handles the GitHub Pages subpath (e.g. /novo-academy/) */
+const _BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, '')
 const FONT_URLS = {
-  light: '/fonts/Montserrat-Light.ttf',
-  regular: '/fonts/Montserrat-Regular.ttf',
-  medium: '/fonts/Montserrat-Medium.ttf',
-  semibold: '/fonts/Montserrat-SemiBold.ttf',
-  bold: '/fonts/Montserrat-Bold.ttf',
+  light:    `${_BASE}/fonts/Montserrat-Light.ttf`,
+  regular:  `${_BASE}/fonts/Montserrat-Regular.ttf`,
+  medium:   `${_BASE}/fonts/Montserrat-Medium.ttf`,
+  semibold: `${_BASE}/fonts/Montserrat-SemiBold.ttf`,
+  bold:     `${_BASE}/fonts/Montserrat-Bold.ttf`,
 }
+const CERT_TEMPLATE_URL = `${_BASE}/cert-template.pdf`
 const fontBytesCache = {}
 async function loadFontBytes(weight) {
   if (fontBytesCache[weight]) return fontBytesCache[weight]
@@ -59,7 +62,7 @@ async function loadFonts(pdfDoc) {
  */
 export async function generateCertificatePdf({ name, courses, dateStr, lang = 'de' }) {
   const L = lang === 'en'
-  const templateBytes = await fetch('/cert-template.pdf').then(r => r.arrayBuffer())
+  const templateBytes = await fetch(CERT_TEMPLATE_URL).then(r => r.arrayBuffer())
   const pdfDoc = await PDFDocument.load(templateBytes)
   const page = pdfDoc.getPages()[0]
   const fonts = await loadFonts(pdfDoc)
@@ -153,7 +156,14 @@ export async function downloadCertificate({ name, courses, dateStr, lang = 'de' 
   link.href = url
   const filenamePrefix = lang === 'en' ? 'NovoAcademy_Certificate' : 'NovoAcademy_Zertifikat'
   const fallback = lang === 'en' ? 'Example' : 'Beispiel'
-  link.download = `${filenamePrefix}_${(name || fallback).replace(/\s+/g, '_')}.pdf`
+  // Sanitise: only keep ASCII alphanumerics, dot, underscore, hyphen — protects
+  // against path traversal / null bytes / invalid filename chars across OSes.
+  const safeName = (name || fallback)
+    .normalize('NFKD').replace(/[̀-ͯ]/g, '') // strip diacritics
+    .replace(/[^A-Za-z0-9._-]+/g, '_')
+    .replace(/^[_.]+|[_.]+$/g, '')
+    .slice(0, 80) || fallback
+  link.download = `${filenamePrefix}_${safeName}.pdf`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)

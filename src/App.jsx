@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect, useContext, createContext 
 import { downloadCertificate } from './generateCert.js'
 import CertTemplateBg from './CertTemplateBg.jsx'
 import PdfThumb from './PdfThumb.jsx'
-import { COURSES, isCertifiable, isCertified, buildInitialState, groupForDisplay, SAMPLE_COURSE_LIST, CATEGORY_CONTENT, HOME_VIDEO_SECTION, getHomeVideoSection, getHomeTopVideos, getContentTags, courseKey, t as tBase, getSampleCourseList } from './data.js'
+import { COURSES, isCertifiable, isCertified, buildInitialState, groupForDisplay, SAMPLE_COURSE_LIST, CATEGORY_CONTENT, HOME_VIDEO_SECTION, getHomeVideoSection, getHomeTopVideos, getContentTags, courseKey, t as tBase, getSampleCourseList, assetUrl } from './data.js'
 import {
   getCurrentSession, onAuthChange, signUpWithEmail, signInWithEmail,
   signInWithGoogle, signOut, loadProgress, saveProgress, isUsingRealSupabase,
@@ -87,61 +87,8 @@ const CATEGORY_ICONS = {
   'Legally Safe Advertising with Products': Icon.Shield,
 }
 
-/* ===================== SIDEBAR ===================== */
-function Sidebar() {
-  const items = [
-    { key: 'home', label: 'Home', Icon: Icon.Grid },
-    { key: 'shop', label: 'Shop', Icon: Icon.Bag },
-    { key: 'orders', label: 'Bestellungen', Icon: Icon.Clipboard },
-    { key: 'customers', label: 'Kunden', Icon: Icon.People },
-    { key: 'finance', label: 'Finanzen', Icon: Icon.Briefcase },
-    { key: 'akademie', label: 'Akademie', Icon: Icon.Book, active: true },
-    { key: 'referral', label: 'Weiterempfehlungs-⁠Programm', Icon: Icon.Network },
-  ]
-  const bottom = [
-    { key: 'profile', label: 'Profil', Icon: Icon.User },
-    { key: 'inbox', label: 'Postfach', Icon: Icon.Bell, count: 24 },
-    { key: 'settings', label: 'Einstellungen', Icon: Icon.Gear },
-  ]
-  return (
-    <aside className="sidebar">
-      <div className="brand">
-        <div className="brand-logo"><span className="novo">NOVO</span><span className="pilot">PILOT</span></div>
-        <div className="brand-sub"><Icon.PlatformIcon /><span>Partner- und Reseller-Plattform</span></div>
-      </div>
-      <div className="divider" />
-      <div className="profile">
-        <div className="avatar-wrap">
-          <div className="avatar">DW</div>
-          <div className="avatar-cam"><Icon.Camera /></div>
-        </div>
-        <div className="name">Daniel Wallersorfer</div>
-        <div className="sub">Daniel Wallerstorfer</div>
-      </div>
-      <div className="divider" />
-      <nav className="nav">
-        {items.map(it => (
-          <button key={it.key} className={`nav-item${it.active ? ' active' : ''}`}>
-            <span className="icon"><it.Icon /></span>
-            <span className="label">{it.label}</span>
-          </button>
-        ))}
-      </nav>
-      <div className="sidebar-spacer" />
-      <div className="sidebar-bottom">
-        <nav className="nav">
-          {bottom.map(it => (
-            <button key={it.key} className="nav-item">
-              <span className="icon"><it.Icon /></span>
-              <span className="label">{it.label}</span>
-              {it.count != null && <span className="count">{it.count}</span>}
-            </button>
-          ))}
-        </nav>
-      </div>
-    </aside>
-  )
-}
+/* Sidebar component was removed — the academy ships as a standalone site
+   (className "app no-sidebar" on the root), so the legacy Sidebar was dead code. */
 
 /* ===================== SEAL (real stamp — serrated, banner, stars) ===================== */
 function Seal({ certified, certifiable, size = 'normal' }) {
@@ -291,6 +238,7 @@ function CategoryRow({ category, label, items, courseState, navigate }) {
   const ref = useRef(null)
   const [canLeft, setCanLeft] = useState(false)
   const [canRight, setCanRight] = useState(false)
+  const lang = useLang()
   const Ico = CATEGORY_ICONS[category] || Icon.Book
   const scroll = (dir) => ref.current && ref.current.scrollBy({ left: dir * 620, behavior: 'smooth' })
 
@@ -323,7 +271,7 @@ function CategoryRow({ category, label, items, courseState, navigate }) {
 
       <div className="row-wrap">
         {canLeft && (
-          <button className="scroll-btn left" onClick={() => scroll(-1)} aria-label="previous">
+          <button className="scroll-btn left" onClick={() => scroll(-1)} aria-label={lang === 'en' ? 'Previous' : 'Zurück'}>
             <Icon.ArrowLeft />
           </button>
         )}
@@ -334,7 +282,7 @@ function CategoryRow({ category, label, items, courseState, navigate }) {
           ))}
         </div>
         {canRight && (
-          <button className="scroll-btn right" onClick={() => scroll(1)} aria-label="next">
+          <button className="scroll-btn right" onClick={() => scroll(1)} aria-label={lang === 'en' ? 'Next' : 'Weiter'}>
             <Icon.ArrowRight />
           </button>
         )}
@@ -702,6 +650,7 @@ function VideoBlock({ video, course }) {
 
 function FullVideo({ course, youtubeId, title }) {
   const [playing, setPlaying] = useState(false)
+  const lang = useLang()
   const v = course.videos?.[0]
   const yt = youtubeId || course.youtubeId
   // 1. explicit coverImage on course (for unlisted videos with no public YT thumb)
@@ -736,11 +685,11 @@ function FullVideo({ course, youtubeId, title }) {
                  }
                }} />
           {!playing && (
-            <button className="cc-video-play" aria-label="Abspielen">
+            <button className="cc-video-play" aria-label={lang === 'en' ? 'Play' : 'Abspielen'}>
               <Icon.Play />
             </button>
           )}
-          {playing && !yt && <div className="cc-video-fake">▶ Wiedergabe (Demo)</div>}
+          {playing && !yt && <div className="cc-video-fake">{lang === 'en' ? '▶ Playback (demo)' : '▶ Wiedergabe (Demo)'}</div>}
           {!yt && v?.duration && <span className="cc-video-duration">{v.duration}</span>}
         </>
       )}
@@ -1216,7 +1165,7 @@ function TestResultPage({ course, score, passed, navigate, onBack }) {
 function Signature() {
   const [err, setErr] = useState(false)
   if (err) return <span className="sig-empty" aria-hidden="true" />
-  return <img className="sig-img" src="/signature.png" alt="Dr. Daniel Wallerstorfer" onError={() => setErr(true)} />
+  return <img className="sig-img" src={assetUrl("/signature.png")} alt="Dr. Daniel Wallerstorfer" onError={() => setErr(true)} />
 }
 
 const formatDateDE = (d = new Date()) =>
@@ -1232,7 +1181,7 @@ function NovogeniaLogo({ className = '' }) {
     return (
       <img
         className={`ng-logo-img ${className}`}
-        src="/novogenia-logo.png"
+        src={assetUrl("/novogenia-logo.png")}
         alt="Novogenia"
         onError={() => setErr(true)}
       />
@@ -1438,33 +1387,60 @@ export default function App() {
   }
   useEffect(() => { try { localStorage.setItem(LANG_KEY, lang) } catch {} }, [lang])
 
+  // Track whether the remote load has finished — guard writes until then
+  // so we don't overwrite local edits made before load resolves,
+  // and so we don't immediately upsert the just-loaded data.
+  const progressLoadedRef = useRef(false)
+  const saveTimerRef = useRef(null)
+
   // Load per-user progress when session becomes available
   useEffect(() => {
     if (!session?.user?.id) {
+      progressLoadedRef.current = false
       setCourseState({})
       return
     }
     let cancelled = false
+    progressLoadedRef.current = false
     ;(async () => {
       const remote = await loadProgress(session.user.id)
       if (cancelled) return
-      // Merge with initial state defaults
+      // Merge initial defaults with remote, then preserve any local edits
+      // made BEFORE the load finished (e.g. user marked a course complete fast)
       const fresh = buildInitialState()
       const merged = { ...fresh }
       for (const [k, v] of Object.entries(remote || {})) {
         merged[k] = { ...merged[k], ...v }
       }
-      setCourseState(merged)
-      setCertName(session.profile?.name || '')
+      setCourseState(local => {
+        const out = { ...merged }
+        for (const [k, v] of Object.entries(local || {})) {
+          // Local watched/passed wins (user explicitly did it during load)
+          if (v?.watched || v?.testPassed) {
+            out[k] = { ...out[k], ...v }
+          }
+        }
+        return out
+      })
+      // Only fill cert name if user hasn't already typed one
+      setCertName(prev => prev || session.profile?.name || '')
+      progressLoadedRef.current = true
     })()
     return () => { cancelled = true }
   }, [session?.user?.id])
 
-  // Persist progress whenever it changes (per-user)
+  // Persist progress — debounced, only after the initial load has resolved
   useEffect(() => {
     if (!session?.user?.id) return
+    if (!progressLoadedRef.current) return
     if (Object.keys(courseState).length === 0) return
-    saveProgress(session.user.id, courseState)
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      saveProgress(session.user.id, courseState)
+    }, 800)
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    }
   }, [courseState, session?.user?.id])
 
   const navigate = (r) => {
@@ -1853,7 +1829,9 @@ function AuthPage({ mode, lang, setLang, busy, setBusy, onSwitchMode, onBackToLa
 
           {!isUsingRealSupabase() && (
             <div className="auth-local-notice">
-              <Icon.Info /> Local-only mode: accounts live in this browser. Configure Supabase to sync across devices.
+              <Icon.Info /> {lang === 'en'
+                ? 'Local-only mode: accounts live in this browser. Configure Supabase to sync across devices.'
+                : 'Lokaler Modus: Konten existieren nur in diesem Browser. Konfiguriere Supabase, um geräteübergreifend zu synchronisieren.'}
             </div>
           )}
         </div>

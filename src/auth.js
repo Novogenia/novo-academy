@@ -55,9 +55,15 @@ const _saveMockProgress = (uid, p) => {
   try { localStorage.setItem(`${MOCK_PROGRESS_KEY}_${uid}`, JSON.stringify(p)) } catch {}
 }
 
-const _uuid = () =>
-  ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
-    (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16))
+const _uuid = () => {
+  try {
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+      (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16))
+  } catch {
+    // Fallback for very old browsers without crypto.getRandomValues
+    return 'mock-' + Date.now() + '-' + Math.random().toString(36).slice(2)
+  }
+}
 
 /* ============================================================
    PUBLIC API */
@@ -176,7 +182,10 @@ export const signInWithGoogle = async () => {
 
 export const signOut = async () => {
   if (USE_REAL && supabase) {
+    // Supabase's onAuthStateChange will call _refreshSession + _emit for us.
+    // Don't manually emit again here to avoid double re-renders.
     await supabase.auth.signOut()
+    return
   }
   _cachedSession = null
   _saveMockSession(null)

@@ -3269,3 +3269,40 @@ export const SAMPLE_COURSE_LIST_EN = [
   'Genetics Basics: Epigenetics — Lifestyle Shapes Genes',
 ]
 export const getSampleCourseList = (lang = 'de') => lang === 'en' ? SAMPLE_COURSE_LIST_EN : SAMPLE_COURSE_LIST
+
+/* ============================================================
+   ASSET PATH PREFIXING (production safe)
+   ------------------------------------------------------------
+   The app is deployed under /novo-academy/ on GitHub Pages.
+   Raw absolute paths like '/thumbnails/01.jpg' would resolve to
+   the wrong location. Vite doesn't auto-prefix raw strings in
+   attribute values or fetch calls, so we walk the course data
+   and prefix any asset path with import.meta.env.BASE_URL.
+
+   Also exported as `assetUrl(path)` for direct use in components
+   (e.g. <img src={assetUrl('/signature.png')} />).
+   ============================================================ */
+const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, '')
+export const assetUrl = (p) => (typeof p === 'string' && p.startsWith('/') ? BASE + p : p)
+
+const ASSET_PATH_RE = /^\/(thumbnails|course-materials|fonts|cert-template|signature|novogenia-logo|style-assets)(\/|\.)/
+const prefixAssetPaths = (obj) => {
+  if (obj == null) return
+  if (Array.isArray(obj)) { for (const item of obj) prefixAssetPaths(item); return }
+  if (typeof obj !== 'object') return
+  for (const key in obj) {
+    const v = obj[key]
+    if (typeof v === 'string' && ASSET_PATH_RE.test(v)) {
+      obj[key] = BASE + v
+    } else if (typeof v === 'object' && v !== null) {
+      prefixAssetPaths(v)
+    }
+  }
+}
+
+// Mutate all asset-bearing exports in place (one-time pass at module load)
+prefixAssetPaths(COURSES)              // includes COURSES_EN via push
+prefixAssetPaths(HOME_TOP_VIDEOS_DE)
+prefixAssetPaths(HOME_TOP_VIDEOS_EN)
+prefixAssetPaths(HOME_VIDEO_DE)
+prefixAssetPaths(HOME_VIDEO_EN)

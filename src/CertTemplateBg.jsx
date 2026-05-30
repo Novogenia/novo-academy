@@ -17,7 +17,8 @@ export default function CertTemplateBg() {
     let cancelled = false
     ;(async () => {
       try {
-        const loadingTask = pdfjs.getDocument('/cert-template.pdf')
+        const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '')
+        const loadingTask = pdfjs.getDocument(`${base}/cert-template.pdf`)
         const doc = await loadingTask.promise
         const page = await doc.getPage(1)
 
