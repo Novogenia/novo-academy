@@ -2878,13 +2878,18 @@ export const isCertified = (course, state) => {
    State is keyed by `uid` (stable per-course identifier) so renaming the
    human-readable `id` does NOT lose user progress. */
 export const buildInitialState = () => {
+  // Every new sign-up starts with a fully empty state — users have to
+  // actually watch the modules and pass the tests to earn certification.
+  // The legacy `initialWatched / initialTestPassed / initialTestScore`
+  // fields on some COURSES are demo/sample seed data and are deliberately
+  // ignored here. (Existing user progress is merged on top in App.jsx.)
   const state = {}
   for (const c of COURSES) {
     state[c.uid] = {
-      watched: c.initialWatched || false,
-      progress: c.initialProgress || 0,
-      testPassed: c.initialTestPassed || false,
-      testScore: c.initialTestScore || 0,
+      watched: false,
+      progress: 0,
+      testPassed: false,
+      testScore: 0,
     }
   }
   return state
