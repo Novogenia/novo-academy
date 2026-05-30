@@ -1896,7 +1896,8 @@ a { color: inherit; text-decoration: none; }
 .landing-header {
   background: #fff;
   border-bottom: 1px solid var(--border, #ece7ea);
-  padding: 16px 0;
+  padding: 20px 0;
+  position: relative;
 }
 .landing-header-inner {
   max-width: 1200px;
@@ -1904,17 +1905,27 @@ a { color: inherit; text-decoration: none; }
   padding: 0 32px;
   display: flex; align-items: center; justify-content: space-between;
   gap: 20px;
+  min-height: 56px;
+  position: relative;
 }
+/* Logo absolutely centered in the header bar regardless of left/right items */
 .landing-logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   font-family: "Montserrat", sans-serif;
   font-weight: 900;
-  font-size: 22px;
+  font-size: 36px;
   letter-spacing: 0.5px;
+  line-height: 1;
   display: flex; align-items: center;
+  white-space: nowrap;
+  pointer-events: auto;
 }
 .landing-logo .pt-novo { color: var(--wine); }
-.landing-logo .pt-academy { color: var(--text); margin-left: 4px; }
-.landing-header-right { display: flex; align-items: center; gap: 16px; }
+.landing-logo .pt-academy { color: var(--text); margin-left: 6px; }
+.landing-header-right { display: flex; align-items: center; gap: 16px; margin-left: auto; }
 .landing-login-btn { white-space: nowrap; }
 .landing-hero {
   background: linear-gradient(180deg, #f8f4f7 0%, #ffffff 100%);
@@ -2150,6 +2161,7 @@ a { color: inherit; text-decoration: none; }
   .landing-who, .landing-final-cta { padding: 56px 20px; }
   .landing-who-title, .landing-final-cta h2 { font-size: 28px; }
   .landing-header-inner { padding: 0 16px; }
+  .landing-logo { font-size: 26px; }
   .user-menu-name { display: none; }
   .auth-card { padding: 32px 24px; }
   .auth-title { font-size: 24px; }
