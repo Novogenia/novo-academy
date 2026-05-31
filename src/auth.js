@@ -279,14 +279,17 @@ export const updateMyLang = async (lang) => {
    ADMIN-ONLY QUERIES — protected by RLS in production
    ============================================================= */
 
-/** Return all profiles + their aggregated progress. Admin only. */
-export const adminLoadAllUsers = async () => {
+/** Return all profiles + their aggregated progress. Admin only.
+    Soft-deleted users (deleted_at != null) are filtered unless includeDeleted=true. */
+export const adminLoadAllUsers = async ({ includeDeleted = false } = {}) => {
   if (USE_REAL && supabase) {
+    let pq = supabase
+      .from('profiles')
+      .select('id, email, name, lang, is_admin, created_at, last_seen_at, deleted_at')
+      .order('created_at', { ascending: false })
+    if (!includeDeleted) pq = pq.is('deleted_at', null)
     const [{ data: profiles }, { data: progressRows }] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('id, email, name, lang, is_admin, created_at, last_seen_at')
-        .order('created_at', { ascending: false }),
+      pq,
       supabase
         .from('user_progress')
         .select('user_id, course_uid, watched, test_passed, test_score, updated_at'),
@@ -346,5 +349,98 @@ export const adminSetUserCourseState = async (userId, courseUid, action) => {
     testScore: payload.test_score,
   }
   _saveMockProgress(userId, prog)
+  return {}
+}
+
+/** Admin: toggle is_admin for a user. */
+export const adminSetIsAdmin = async (userId, isAdmin) => {
+  if (!userId) return { error: 'missing user id' }
+  if (USE_REAL && supabase) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_admin: !!isAdmin })
+      .eq('id', userId)
+    if (error) return { error: error.message }
+    return {}
+  }
+  // Mock: stored on users object
+  const users = _loadMockUsers()
+  for (const k of Object.keys(users)) {
+    if (users[k].id === userId) users[k].is_admin = !!isAdmin
+  }
+  _saveMockUsers(users)
+  return {}
+}
+
+/** Admin: rename a user (update profile.name). */
+export const adminUpdateUserName = async (userId, name) => {
+  if (!userId || !name) return { error: 'missing args' }
+  if (USE_REAL && supabase) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ name })
+      .eq('id', userId)
+    if (error) return { error: error.message }
+    return {}
+  }
+  const users = _loadMockUsers()
+  for (const k of Object.keys(users)) {
+    if (users[k].id === userId) users[k].name = name
+  }
+  _saveMockUsers(users)
+  return {}
+}
+
+/** Admin: wipe ALL progress rows for a user. */
+export const adminResetAllProgress = async (userId) => {
+  if (!userId) return { error: 'missing user id' }
+  if (USE_REAL && supabase) {
+    const { error } = await supabase
+      .from('user_progress')
+      .delete()
+      .eq('user_id', userId)
+    if (error) return { error: error.message }
+    return {}
+  }
+  _saveMockProgress(userId, {})
+  return {}
+}
+
+/** Admin: soft-delete a user (set deleted_at). The auth.users row stays, but
+ *  the profile is hidden from the admin list. Reversible via undelete. */
+export const adminSoftDeleteUser = async (userId) => {
+  if (!userId) return { error: 'missing user id' }
+  if (USE_REAL && supabase) {
+    // Also reset is_admin so a soft-deleted admin can't accidentally edit
+    const { error } = await supabase
+      .from('profiles')
+      .update({ deleted_at: new Date().toISOString(), is_admin: false })
+      .eq('id', userId)
+    if (error) return { error: error.message }
+    // Also remove their progress
+    await supabase.from('user_progress').delete().eq('user_id', userId)
+    return {}
+  }
+  // Mock: remove from users
+  const users = _loadMockUsers()
+  for (const k of Object.keys(users)) {
+    if (users[k].id === userId) delete users[k]
+  }
+  _saveMockUsers(users)
+  _saveMockProgress(userId, {})
+  return {}
+}
+
+/** Admin: undo a soft-delete. */
+export const adminUndeleteUser = async (userId) => {
+  if (!userId) return { error: 'missing user id' }
+  if (USE_REAL && supabase) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ deleted_at: null })
+      .eq('id', userId)
+    if (error) return { error: error.message }
+    return {}
+  }
   return {}
 }

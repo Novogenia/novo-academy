@@ -3279,6 +3279,19 @@ const UI = {
   admin_loading:              { de: 'Lade Nutzerdaten…',             en: 'Loading user data…' },
   admin_no_users:             { de: 'Keine Nutzer gefunden.',        en: 'No users found.' },
   admin_no_matches:           { de: 'Keine Treffer für die Suche.',  en: 'No matches for the search.' },
+
+  // ---- Admin user actions ----
+  admin_action_promote:       { de: 'Zum Admin machen',              en: 'Promote to admin' },
+  admin_action_demote:        { de: 'Admin-Rechte entziehen',        en: 'Remove admin rights' },
+  admin_action_rename:        { de: 'Name ändern',                   en: 'Rename' },
+  admin_action_rename_prompt: { de: 'Neuer Name:',                   en: 'New name:' },
+  admin_action_reset_all:     { de: 'Allen Fortschritt zurücksetzen', en: 'Reset all progress' },
+  admin_action_reset_confirm: { de: 'Wirklich allen Kurs-Fortschritt dieses Nutzers löschen?',
+                                en: 'Really wipe ALL course progress for this user?' },
+  admin_action_delete:        { de: 'Nutzer entfernen',              en: 'Delete user' },
+  admin_action_delete_confirm:{ de: 'Diesen Nutzer wirklich entfernen?\n\nDer Account bleibt zwar bestehen, wird aber aus der Admin-Liste ausgeblendet und alle Kurs-Fortschritte gelöscht.',
+                                en: 'Really delete this user?\n\nThe account itself stays but disappears from the admin list and all course progress is deleted.' },
+  admin_show_deleted:         { de: 'Gelöschte anzeigen',             en: 'Show deleted' },
 }
 
 export const t = (lang, key) => {

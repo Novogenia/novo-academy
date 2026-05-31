@@ -59,66 +59,63 @@ async function loadFonts(pdfDoc) {
  *
  * Conversion factor: 1 pt = 1.333 px (96 DPI), so 1 px = 0.75 pt.
  * Y values are baselines in PDF coordinates (origin bottom-left).
+ *
+ * Pagination: if the module list overflows one page, the cert spills into
+ * a second (or third…) page that re-uses the template design — same header
+ * + signature block, different module slice. With ~17 pt line height and
+ * the available vertical strip we fit comfortably 16 modules per page.
  */
-export async function generateCertificatePdf({ name, courses, dateStr, lang = 'de' }) {
-  const L = lang === 'en'
-  const templateBytes = await fetch(CERT_TEMPLATE_URL).then(r => r.arrayBuffer())
-  const pdfDoc = await PDFDocument.load(templateBytes)
-  const page = pdfDoc.getPages()[0]
-  const fonts = await loadFonts(pdfDoc)
+const MAX_MODULES_PER_PAGE = 16
 
-  /* Helper: draw text */
+/** Draw a single certificate page (header + module slice + footer). */
+function drawCertPage(page, { name, dateStr, lang, courses, fonts, pageIndex, totalPages }) {
+  const L = lang === 'en'
   const draw = (text, { x, y, size, font, color = COLOR_BLACK, maxWidth, lineHeight }) => {
     page.drawText(text, { x, y, size, font, color, maxWidth, lineHeight })
   }
 
   // 1) NOVOGENIA — wine, Medium, 26pt
-  draw('NOVOGENIA', {
-    x: 52.5, y: 665, size: 26,
-    font: fonts.medium, color: COLOR_WINE,
-  })
+  draw('NOVOGENIA', { x: 52.5, y: 665, size: 26, font: fonts.medium, color: COLOR_WINE })
 
   // 2) GENETIK COACH / GENETICS COACH — black, Bold, 48pt
   draw(L ? 'GENETICS COACH' : 'GENETIK COACH', {
-    x: 52.5, y: 617.5, size: 48,
-    font: fonts.bold, color: COLOR_BLACK,
+    x: 52.5, y: 617.5, size: 48, font: fonts.bold, color: COLOR_BLACK,
   })
 
   // 3) "Dieses Zertifikat bestätigt, dass" — black, SemiBold, 9.7pt
   draw(L ? 'This certificate confirms that' : 'Dieses Zertifikat bestätigt, dass', {
-    x: 52.5, y: 578, size: 9.7,
-    font: fonts.semibold, color: COLOR_BLACK,
+    x: 52.5, y: 578, size: 9.7, font: fonts.semibold, color: COLOR_BLACK,
   })
 
-  // 4) Recipient name — wine, Medium, 24pt (matches NOVOGENIA style, slightly smaller)
+  // 4) Recipient name — wine, Medium, 24pt
   draw(name || (L ? 'Jane Doe' : 'Maria Mustermann'), {
-    x: 52.5, y: 549, size: 24,
-    font: fonts.medium, color: COLOR_WINE,
+    x: 52.5, y: 549, size: 24, font: fonts.medium, color: COLOR_WINE,
   })
 
-  // 5) Date sentence — black, SemiBold, 9.7pt with bold inline date
-  // (drawn as parts so the date is bold and the rest is regular)
+  // 5) Date sentence — drawn as parts so date is bold and rest is regular
   const datePrefix = L ? 'On ' : 'Am '
-  const dateBold = dateStr
-  const dateSuffix = L
-    ? ' successfully completed and passed the following training modules:'
-    : ' erfolgreich die folgenden Schulungsmodule absolviert und bestanden hat:'
+  const dateSuffix = (totalPages > 1
+    ? (L
+        ? ` successfully completed and passed the following training modules (page ${pageIndex + 1} of ${totalPages}):`
+        : ` erfolgreich die folgenden Schulungsmodule absolviert und bestanden hat (Seite ${pageIndex + 1} von ${totalPages}):`)
+    : (L
+        ? ' successfully completed and passed the following training modules:'
+        : ' erfolgreich die folgenden Schulungsmodule absolviert und bestanden hat:'))
   let dx = 52.5
   const dy = 516
   const dsize = 9.7
   draw(datePrefix, { x: dx, y: dy, size: dsize, font: fonts.regular, color: COLOR_BLACK })
   dx += fonts.regular.widthOfTextAtSize(datePrefix, dsize)
-  draw(dateBold, { x: dx, y: dy, size: dsize, font: fonts.bold, color: COLOR_BLACK })
-  dx += fonts.bold.widthOfTextAtSize(dateBold, dsize)
-  // The suffix may need to wrap. Use maxWidth so pdf-lib breaks at the right point.
+  draw(dateStr, { x: dx, y: dy, size: dsize, font: fonts.bold, color: COLOR_BLACK })
+  dx += fonts.bold.widthOfTextAtSize(dateStr, dsize)
   draw(dateSuffix, {
     x: dx, y: dy, size: dsize,
     font: fonts.regular, color: COLOR_BLACK,
-    maxWidth: 540 - (dx - 52.5),  // remaining room on first line
+    maxWidth: 540 - (dx - 52.5),
     lineHeight: 13,
   })
 
-  // 6) Module list — bullet • + "Category:" SemiBold + " Topic" Light
+  // 6) Module list (this page's slice) — bullet + "Category:" SemiBold + " Topic" Light
   const BULLET_X = 60
   const CAT_X = 70
   let y = 491
@@ -140,10 +137,54 @@ export async function generateCertificatePdf({ name, courses, dateStr, lang = 'd
 
   // 7) "CEO von Novogenia" / "CEO of Novogenia" — small, Regular
   draw(L ? 'CEO of Novogenia' : 'CEO von Novogenia', {
-    x: 78.7, y: 77, size: 10.5,
-    font: fonts.regular, color: COLOR_BLACK,
+    x: 78.7, y: 77, size: 10.5, font: fonts.regular, color: COLOR_BLACK,
   })
+}
 
+export async function generateCertificatePdf({ name, courses, dateStr, lang = 'de' }) {
+  const templateBytes = await fetch(CERT_TEMPLATE_URL).then(r => r.arrayBuffer())
+
+  // Split modules into pages
+  const chunks = []
+  const list = Array.isArray(courses) ? courses : []
+  if (list.length === 0) chunks.push([])
+  else {
+    for (let i = 0; i < list.length; i += MAX_MODULES_PER_PAGE) {
+      chunks.push(list.slice(i, i + MAX_MODULES_PER_PAGE))
+    }
+  }
+
+  // Single-page fast path — open the template directly (preserves any
+  // template-level features the most reliably)
+  if (chunks.length <= 1) {
+    const pdfDoc = await PDFDocument.load(templateBytes)
+    const fonts = await loadFonts(pdfDoc)
+    drawCertPage(pdfDoc.getPages()[0], {
+      name, dateStr, lang,
+      courses: chunks[0] || [],
+      fonts,
+      pageIndex: 0,
+      totalPages: 1,
+    })
+    return await pdfDoc.save()
+  }
+
+  // Multi-page path: build a fresh PDFDocument, copy the template's page once
+  // per chunk, then draw the chunk content on top.
+  const pdfDoc = await PDFDocument.create()
+  const fonts = await loadFonts(pdfDoc)
+  const templateDoc = await PDFDocument.load(templateBytes)
+  for (let pi = 0; pi < chunks.length; pi++) {
+    const [copied] = await pdfDoc.copyPages(templateDoc, [0])
+    pdfDoc.addPage(copied)
+    drawCertPage(copied, {
+      name, dateStr, lang,
+      courses: chunks[pi],
+      fonts,
+      pageIndex: pi,
+      totalPages: chunks.length,
+    })
+  }
   return await pdfDoc.save()
 }
 

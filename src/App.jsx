@@ -7,6 +7,8 @@ import {
   getCurrentSession, onAuthChange, signUpWithEmail, signInWithEmail,
   signInWithGoogle, signOut, loadProgress, saveProgress, isUsingRealSupabase,
   getMyProfile, updateMyLang, adminLoadAllUsers, adminSetUserCourseState,
+  adminSetIsAdmin, adminUpdateUserName, adminResetAllProgress,
+  adminSoftDeleteUser, adminUndeleteUser,
 } from './auth.js'
 
 /* ===================== I18N CONTEXT =====================
@@ -1754,17 +1756,18 @@ function AdminPage({ onBack }) {
   const [tab, setTab] = useState('dashboard')
   const [users, setUsers] = useState(null) // null = loading, [] = loaded
   const [error, setError] = useState(null)
+  const [showDeleted, setShowDeleted] = useState(false)
 
   const reload = async () => {
     try {
-      const list = await adminLoadAllUsers()
+      const list = await adminLoadAllUsers({ includeDeleted: showDeleted })
       setUsers(list || [])
     } catch (e) {
       setError(e.message || String(e))
       setUsers([])
     }
   }
-  useEffect(() => { reload() }, [])
+  useEffect(() => { reload() }, [showDeleted])
 
   return (
     <div className="content admin-page">
@@ -1778,6 +1781,12 @@ function AdminPage({ onBack }) {
             {t('admin_tab_users')}{users ? ` (${users.length})` : ''}
           </button>
         </div>
+        {tab === 'users' && (
+          <label className="admin-toggle-deleted">
+            <input type="checkbox" checked={showDeleted} onChange={e => setShowDeleted(e.target.checked)} />
+            <span>{t('admin_show_deleted')}</span>
+          </label>
+        )}
       </div>
 
       {users === null && <p className="admin-loading">{t('admin_loading')}</p>}
@@ -1984,9 +1993,12 @@ function AdminUserList({ users, onChanged }) {
                       <span style={{ color: 'var(--wine)' }}>{certified}× cert</span>
                     </td>
                     <td>
-                      <button className="btn-ghost admin-expand-btn" onClick={() => setExpandedId(isOpen ? null : u.id)}>
-                        {isOpen ? t('admin_user_collapse') : t('admin_user_expand')}
-                      </button>
+                      <div className="admin-row-actions">
+                        <button className="btn-ghost admin-expand-btn" onClick={() => setExpandedId(isOpen ? null : u.id)}>
+                          {isOpen ? t('admin_user_collapse') : t('admin_user_expand')}
+                        </button>
+                        <AdminUserActionsMenu user={u} onChanged={onChanged} />
+                      </div>
                     </td>
                   </tr>
                   {isOpen && (
@@ -2063,6 +2075,85 @@ function AdminUserCourses({ user, onSet, busyKey }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+/* ----- Per-user actions menu (promote/demote, rename, reset, delete) ----- */
+function AdminUserActionsMenu({ user, onChanged }) {
+  const t = useT()
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [open])
+
+  const wrap = async (fn) => {
+    setBusy(true)
+    try { await fn() } finally { setBusy(false); setOpen(false); onChanged && onChanged() }
+  }
+
+  const togglePromote = () => wrap(() => adminSetIsAdmin(user.id, !user.is_admin))
+  const rename = () => wrap(async () => {
+    const newName = window.prompt(t('admin_action_rename_prompt'), user.name || '')
+    if (newName && newName.trim() && newName.trim() !== user.name) {
+      await adminUpdateUserName(user.id, newName.trim())
+    }
+  })
+  const resetAll = () => wrap(async () => {
+    if (window.confirm(t('admin_action_reset_confirm'))) {
+      await adminResetAllProgress(user.id)
+    }
+  })
+  const softDelete = () => wrap(async () => {
+    if (window.confirm(t('admin_action_delete_confirm'))) {
+      await adminSoftDeleteUser(user.id)
+    }
+  })
+  const undelete = () => wrap(() => adminUndeleteUser(user.id))
+
+  const isDeleted = Boolean(user.deleted_at)
+
+  return (
+    <div className="admin-actions-menu" ref={ref}>
+      <button
+        className="admin-actions-btn"
+        onClick={() => setOpen(o => !o)}
+        disabled={busy}
+        aria-label="User actions"
+        aria-haspopup="true"
+        aria-expanded={open}
+      >⋯</button>
+      {open && (
+        <div className="admin-actions-pop" role="menu">
+          {isDeleted ? (
+            <button className="admin-actions-item" onClick={undelete} disabled={busy}>
+              ↺ Undelete
+            </button>
+          ) : (
+            <>
+              <button className="admin-actions-item" onClick={togglePromote} disabled={busy}>
+                {user.is_admin ? '↓ ' + t('admin_action_demote') : '↑ ' + t('admin_action_promote')}
+              </button>
+              <button className="admin-actions-item" onClick={rename} disabled={busy}>
+                ✎ {t('admin_action_rename')}
+              </button>
+              <button className="admin-actions-item" onClick={resetAll} disabled={busy}>
+                ↻ {t('admin_action_reset_all')}
+              </button>
+              <div className="admin-actions-sep" />
+              <button className="admin-actions-item is-danger" onClick={softDelete} disabled={busy}>
+                ✕ {t('admin_action_delete')}
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
