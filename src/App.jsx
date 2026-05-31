@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect, useContext, createContext 
 import { downloadCertificate } from './generateCert.js'
 import CertTemplateBg from './CertTemplateBg.jsx'
 import PdfThumb from './PdfThumb.jsx'
-import { COURSES, isCertifiable, isCertified, buildInitialState, groupForDisplay, SAMPLE_COURSE_LIST, CATEGORY_CONTENT, HOME_VIDEO_SECTION, getHomeVideoSection, getHomeTopVideos, getContentTags, courseKey, t as tBase, getSampleCourseList, assetUrl } from './data.js'
+import { COURSES, isCertifiable, isCertified, buildInitialState, groupForDisplay, SAMPLE_COURSE_LIST, CATEGORY_CONTENT, HOME_VIDEO_SECTION, getHomeVideoSection, getHomeTopVideos, getContentTags, courseKey, t as tBase, getSampleCourseList, assetUrl, bestDisplayName } from './data.js'
 import {
   getCurrentSession, onAuthChange, signUpWithEmail, signInWithEmail,
   signInWithGoogle, signOut, loadProgress, saveProgress, isUsingRealSupabase,
@@ -1440,7 +1440,10 @@ export default function App() {
         return out
       })
       // Only fill cert name if user hasn't already typed one
-      setCertName(prev => prev || session.profile?.name || '')
+      // Pre-fill the certificate name with a nicely capitalised version,
+      // never with the raw email. Don't overwrite if the user already typed
+      // something themselves.
+      setCertName(prev => prev || bestDisplayName(session.profile?.name, session.user?.email))
       progressLoadedRef.current = true
     })()
     return () => { cancelled = true }
@@ -1620,11 +1623,13 @@ function TopBar({ lang, setLang, session, profile, navigate }) {
             <Icon.Gear />
           </button>
         )}
-        {session && (
+        {session && (() => {
+          const displayName = bestDisplayName(session.profile?.name, session.user?.email)
+          return (
           <div className="user-menu" ref={menuRef}>
             <button className="user-menu-btn" onClick={() => setMenuOpen(o => !o)} aria-haspopup="true" aria-expanded={menuOpen}>
-              <span className="user-menu-avatar">{(session.profile?.name || session.user?.email || '?').charAt(0).toUpperCase()}</span>
-              <span className="user-menu-name">{session.profile?.name || session.user?.email}</span>
+              <span className="user-menu-avatar">{(displayName || '?').charAt(0).toUpperCase()}</span>
+              <span className="user-menu-name">{displayName}</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             {menuOpen && (
@@ -1637,7 +1642,8 @@ function TopBar({ lang, setLang, session, profile, navigate }) {
               </div>
             )}
           </div>
-        )}
+          )
+        })()}
       </div>
     </div>
   )
@@ -1974,11 +1980,11 @@ function AdminUserList({ users, onChanged }) {
                     <td>
                       <div className="admin-user-cell">
                         <span className="user-menu-avatar admin-user-avatar">
-                          {(u.name || u.email || '?').charAt(0).toUpperCase()}
+                          {(bestDisplayName(u.name, u.email) || '?').charAt(0).toUpperCase()}
                         </span>
                         <div>
                           <div className="admin-user-name">
-                            {u.name || u.email}
+                            {bestDisplayName(u.name, u.email)}
                             {u.is_admin && <span className="admin-badge">{t('admin_user_admin_badge')}</span>}
                           </div>
                           <div className="admin-user-email">{u.email}</div>
@@ -2100,7 +2106,8 @@ function AdminUserActionsMenu({ user, onChanged }) {
 
   const togglePromote = () => wrap(() => adminSetIsAdmin(user.id, !user.is_admin))
   const rename = () => wrap(async () => {
-    const newName = window.prompt(t('admin_action_rename_prompt'), user.name || '')
+    const suggestion = bestDisplayName(user.name, user.email)
+    const newName = window.prompt(t('admin_action_rename_prompt'), suggestion)
     if (newName && newName.trim() && newName.trim() !== user.name) {
       await adminUpdateUserName(user.id, newName.trim())
     }

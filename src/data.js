@@ -3334,6 +3334,44 @@ export const getSampleCourseList = (lang = 'de') => lang === 'en' ? SAMPLE_COURS
 const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, '')
 export const assetUrl = (p) => (typeof p === 'string' && p.startsWith('/') ? BASE + p : p)
 
+/* ============================================================
+   prettyNameFromEmail(email)
+   ----------------------------------------------------------
+   Turn the local part of an email into a presentable display
+   name — used as a default suggestion on the certificate when
+   the user hasn't entered a proper name yet.
+
+     'daniel@novogenia.com'               → 'Daniel'
+     'daniel.wallerstorfer@gmail.com'     → 'Daniel Wallerstorfer'
+     'daniel_wallerstorfer@gmail.com'     → 'Daniel Wallerstorfer'
+     'daniel-w@gmail.com'                 → 'Daniel W'
+     'daniel123@gmail.com'                → 'Daniel'
+     'd.wallerstorfer+novo@gmail.com'     → 'D Wallerstorfer'
+   ============================================================ */
+export const prettyNameFromEmail = (email) => {
+  if (!email || typeof email !== 'string') return ''
+  const local = email.split('@')[0] || ''
+  const cleaned = local
+    .replace(/\+.*$/, '')   // strip the +tag part (daniel+novo → daniel)
+    .replace(/\d+$/, '')    // strip trailing digits (daniel123 → daniel)
+  const parts = cleaned.split(/[._\-\s]+/).filter(Boolean)
+  if (parts.length === 0) return ''
+  return parts
+    .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+    .join(' ')
+}
+
+/** Decide the best display name for a user:
+ *  – if a real `name` is present and isn't just the email, use it
+ *  – otherwise derive one from the email
+ *  – otherwise fall back to a generic '—' */
+export const bestDisplayName = (name, email) => {
+  if (name && name.trim() && name.trim().toLowerCase() !== (email || '').toLowerCase()) {
+    return name.trim()
+  }
+  return prettyNameFromEmail(email) || name || email || ''
+}
+
 const ASSET_PATH_RE = /^\/(thumbnails|course-materials|fonts|cert-template|signature|novogenia-logo|style-assets)(\/|\.)/
 const prefixAssetPaths = (obj) => {
   if (obj == null) return
