@@ -6,6 +6,7 @@ import { COURSES, isCertifiable, isCertified, buildInitialState, groupForDisplay
 import {
   getCurrentSession, onAuthChange, signUpWithEmail, signInWithEmail,
   signInWithGoogle, signOut, loadProgress, saveProgress, isUsingRealSupabase,
+  getMyProfile, updateMyLang, adminLoadAllUsers, adminSetUserCourseState,
 } from './auth.js'
 
 /* ===================== I18N CONTEXT =====================
@@ -1361,7 +1362,8 @@ export default function App() {
   // Phase: 'lang-pick' (first visit) → 'landing' (intro) → 'auth' (signup/login) → 'app' (logged-in academy)
   const [langChosen, setLangChosen] = useState(hasChosenLang)
   const [session, setSession] = useState(() => getCurrentSession())
-  const [outerRoute, setOuterRoute] = useState(null) // null = derived from phase; otherwise 'landing'|'auth-signup'|'auth-login'
+  const [profile, setProfile] = useState(null)
+  const [outerRoute, setOuterRoute] = useState(null) // null = derived from phase; otherwise 'landing'|'auth-signup'|'auth-login'|'admin'
   const [authBusy, setAuthBusy] = useState(false)
 
   // Subscribe to auth changes (Supabase session + mock session)
@@ -1369,6 +1371,17 @@ export default function App() {
     const unsub = onAuthChange((s) => setSession(s))
     return unsub
   }, [])
+
+  // When logged in, load the user's profile (so we know if they're admin)
+  useEffect(() => {
+    if (!session?.user?.id) { setProfile(null); return }
+    let cancelled = false
+    ;(async () => {
+      const p = await getMyProfile()
+      if (!cancelled) setProfile(p)
+    })()
+    return () => { cancelled = true }
+  }, [session?.user?.id])
 
   // ---- Inner academy state ----
   const [route, setRoute] = useState({ name: 'home' })
@@ -1384,6 +1397,8 @@ export default function App() {
       localStorage.setItem(LANG_CHOSEN_KEY, '1')
     } catch {}
     setLangChosen(true)
+    // Persist to user profile (for admin language stats)
+    updateMyLang(newLang).catch(() => {})
   }
   useEffect(() => { try { localStorage.setItem(LANG_KEY, lang) } catch {} }, [lang])
 
@@ -1530,11 +1545,20 @@ export default function App() {
     page = <CertificatePage name={route.isSample ? sampleName : certName}
       courses={route.isSample ? getSampleCourseList(lang) : certifiedCourses}
       isSample={route.isSample} onBack={() => navigate({ name: 'home' })} />
+  } else if (route.name === 'admin' && profile?.is_admin) {
+    page = (
+      <div className="app no-sidebar">
+        <main className="main">
+          <TopBar lang={lang} setLang={setLang} session={session} profile={profile} navigate={navigate} />
+          <AdminPage onBack={() => navigate({ name: 'home' })} />
+        </main>
+      </div>
+    )
   } else {
     page = (
       <div className="app no-sidebar">
         <main className="main">
-          <TopBar lang={lang} setLang={setLang} session={session} />
+          <TopBar lang={lang} setLang={setLang} session={session} profile={profile} navigate={navigate} />
           <HomePage
             courseState={courseState}
             navigate={navigate}
@@ -1553,10 +1577,11 @@ export default function App() {
 }
 
 /* ===================== TOP BAR ===================== */
-function TopBar({ lang, setLang, session }) {
+function TopBar({ lang, setLang, session, profile, navigate }) {
   const t = useT()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
+  const isAdmin = Boolean(profile?.is_admin)
 
   useEffect(() => {
     if (!menuOpen) return
@@ -1582,6 +1607,16 @@ function TopBar({ lang, setLang, session }) {
               onClick={() => setLang('en')}
             >EN</button>
           </div>
+        )}
+        {isAdmin && navigate && (
+          <button
+            className="admin-gear-btn"
+            onClick={() => navigate({ name: 'admin' })}
+            aria-label={t('admin_title')}
+            title={t('admin_title')}
+          >
+            <Icon.Gear />
+          </button>
         )}
         {session && (
           <div className="user-menu" ref={menuRef}>
@@ -1705,6 +1740,329 @@ function LandingPage({ lang, setLang, onSignUp, onLogIn }) {
       <footer className="landing-footer">
         <span>© Novogenia GmbH</span>
       </footer>
+    </div>
+  )
+}
+
+/* ===================== ADMIN PAGE =====================
+   Visible only to users with `profiles.is_admin = true`. Two tabs:
+   – Dashboard: total / new / active / certified user stats + language split + growth sparkline
+   – Users: searchable list with expandable per-course toggles */
+function AdminPage({ onBack }) {
+  const t = useT()
+  const lang = useLang()
+  const [tab, setTab] = useState('dashboard')
+  const [users, setUsers] = useState(null) // null = loading, [] = loaded
+  const [error, setError] = useState(null)
+
+  const reload = async () => {
+    try {
+      const list = await adminLoadAllUsers()
+      setUsers(list || [])
+    } catch (e) {
+      setError(e.message || String(e))
+      setUsers([])
+    }
+  }
+  useEffect(() => { reload() }, [])
+
+  return (
+    <div className="content admin-page">
+      <div className="admin-bar">
+        <button className="btn-back" onClick={onBack}>{t('admin_back')}</button>
+        <div className="admin-tabs">
+          <button className={`admin-tab${tab === 'dashboard' ? ' is-active' : ''}`} onClick={() => setTab('dashboard')}>
+            {t('admin_tab_dashboard')}
+          </button>
+          <button className={`admin-tab${tab === 'users' ? ' is-active' : ''}`} onClick={() => setTab('users')}>
+            {t('admin_tab_users')}{users ? ` (${users.length})` : ''}
+          </button>
+        </div>
+      </div>
+
+      {users === null && <p className="admin-loading">{t('admin_loading')}</p>}
+      {error && <p className="auth-error">{error}</p>}
+      {users && users.length === 0 && !error && <p className="admin-loading">{t('admin_no_users')}</p>}
+
+      {users && users.length > 0 && tab === 'dashboard' && <AdminDashboard users={users} />}
+      {users && users.length > 0 && tab === 'users' && (
+        <AdminUserList users={users} onChanged={reload} />
+      )}
+    </div>
+  )
+}
+
+/* ----- Helpers for course-level analysis ----- */
+const _certifiableUidsByLang = (() => {
+  // Pre-compute which UIDs are certifiable per lang so admin code stays fast
+  const out = { de: new Set(), en: new Set() }
+  for (const c of COURSES) {
+    if (isCertifiable(c)) {
+      const l = c.lang || 'de'
+      if (out[l]) out[l].add(c.uid)
+    }
+  }
+  return out
+})()
+
+const _userActiveCount = (u) =>
+  Object.values(u.progress || {}).filter(p => p?.watched).length
+const _userCertifiedCount = (u) =>
+  Object.values(u.progress || {}).filter(p => p?.watched && p?.testPassed).length
+
+/* ----- Dashboard ----- */
+function AdminDashboard({ users }) {
+  const t = useT()
+  const stats = useMemo(() => {
+    const now = Date.now()
+    const day7 = now - 7 * 24 * 60 * 60 * 1000
+    const day30 = now - 30 * 24 * 60 * 60 * 1000
+
+    let new7 = 0, new30 = 0, active = 0, certified = 0, completions = 0
+    const langCount = {}
+    const growth = new Array(30).fill(0) // bucket index 0 = oldest, 29 = today
+
+    for (const u of users) {
+      const created = u.created_at ? new Date(u.created_at).getTime() : 0
+      if (created >= day7) new7++
+      if (created >= day30) new30++
+      langCount[u.lang || 'de'] = (langCount[u.lang || 'de'] || 0) + 1
+      const watched = _userActiveCount(u)
+      if (watched > 0) active++
+      const cert = _userCertifiedCount(u)
+      if (cert > 0) certified++
+      completions += watched
+      // growth bucket — newest bucket is today
+      if (created >= day30) {
+        const ageDays = Math.floor((now - created) / (24 * 60 * 60 * 1000))
+        const idx = Math.max(0, 29 - ageDays)
+        growth[idx]++
+      }
+    }
+    return { total: users.length, new7, new30, active, certified, completions, langCount, growth }
+  }, [users])
+
+  const langTotal = Object.values(stats.langCount).reduce((a, b) => a + b, 0) || 1
+
+  return (
+    <div className="admin-dashboard">
+      <div className="admin-stat-grid">
+        <StatCard label={t('admin_stat_total_users')}    value={stats.total} />
+        <StatCard label={t('admin_stat_new_7d')}         value={stats.new7} />
+        <StatCard label={t('admin_stat_new_30d')}        value={stats.new30} />
+        <StatCard label={t('admin_stat_active')}         value={stats.active} />
+        <StatCard label={t('admin_stat_certified')}      value={stats.certified} />
+        <StatCard label={t('admin_stat_total_progress')} value={stats.completions} />
+      </div>
+
+      <div className="admin-chart-row">
+        <section className="admin-chart-card">
+          <h3 className="admin-chart-title">{t('admin_stat_growth')}</h3>
+          <GrowthSparkline buckets={stats.growth} />
+        </section>
+        <section className="admin-chart-card">
+          <h3 className="admin-chart-title">{t('admin_stat_lang_split')}</h3>
+          <ul className="admin-lang-list">
+            {Object.entries(stats.langCount).sort((a, b) => b[1] - a[1]).map(([code, n]) => (
+              <li key={code} className="admin-lang-row">
+                <span className="admin-lang-code">{code.toUpperCase()}</span>
+                <div className="admin-lang-bar-wrap">
+                  <div className="admin-lang-bar" style={{ width: `${(n / langTotal) * 100}%` }} />
+                </div>
+                <span className="admin-lang-num">{n}</span>
+                <span className="admin-lang-pct">{Math.round((n / langTotal) * 100)}%</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ label, value }) {
+  return (
+    <div className="admin-stat-card">
+      <div className="admin-stat-num">{value}</div>
+      <div className="admin-stat-label">{label}</div>
+    </div>
+  )
+}
+
+function GrowthSparkline({ buckets }) {
+  // 30 buckets, each = users signed up that day. Cumulative line.
+  const W = 600, H = 120, PAD = 8
+  let acc = 0
+  const cumulative = buckets.map(n => (acc += n, acc))
+  const max = Math.max(1, cumulative[cumulative.length - 1])
+  const points = cumulative.map((v, i) => {
+    const x = PAD + (i / (cumulative.length - 1)) * (W - 2 * PAD)
+    const y = H - PAD - (v / max) * (H - 2 * PAD)
+    return `${x.toFixed(1)},${y.toFixed(1)}`
+  }).join(' ')
+  const area = `M${PAD},${H - PAD} L${points} L${W - PAD},${H - PAD} Z`
+  return (
+    <svg className="admin-spark-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      <path d={area} fill="var(--wine-soft, #f5e9ef)" />
+      <polyline points={points} fill="none" stroke="var(--wine)" strokeWidth="2" />
+      <text x={W - PAD} y={14} textAnchor="end" fontSize="11" fill="#888">{max} total</text>
+    </svg>
+  )
+}
+
+/* ----- User list with per-course toggles ----- */
+function AdminUserList({ users, onChanged }) {
+  const t = useT()
+  const [query, setQuery] = useState('')
+  const [expandedId, setExpandedId] = useState(null)
+  const [busyKey, setBusyKey] = useState(null) // `${userId}:${courseUid}`
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return users
+    return users.filter(u =>
+      (u.email || '').toLowerCase().includes(q) ||
+      (u.name || '').toLowerCase().includes(q)
+    )
+  }, [users, query])
+
+  const setCourse = async (userId, courseUid, action) => {
+    setBusyKey(`${userId}:${courseUid}`)
+    await adminSetUserCourseState(userId, courseUid, action)
+    setBusyKey(null)
+    onChanged && onChanged()
+  }
+
+  return (
+    <div className="admin-userlist">
+      <input
+        className="admin-search"
+        placeholder={t('admin_users_search')}
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+      />
+      {filtered.length === 0 ? (
+        <p className="admin-loading">{t('admin_no_matches')}</p>
+      ) : (
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>{t('admin_users_col_user')}</th>
+              <th>{t('admin_users_col_signup')}</th>
+              <th>{t('admin_users_col_lang')}</th>
+              <th>{t('admin_users_col_progress')}</th>
+              <th>{t('admin_users_col_actions')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(u => {
+              const watched = _userActiveCount(u)
+              const certified = _userCertifiedCount(u)
+              const isOpen = expandedId === u.id
+              return (
+                <React.Fragment key={u.id}>
+                  <tr className={u.is_admin ? 'is-admin-row' : ''}>
+                    <td>
+                      <div className="admin-user-cell">
+                        <span className="user-menu-avatar admin-user-avatar">
+                          {(u.name || u.email || '?').charAt(0).toUpperCase()}
+                        </span>
+                        <div>
+                          <div className="admin-user-name">
+                            {u.name || u.email}
+                            {u.is_admin && <span className="admin-badge">{t('admin_user_admin_badge')}</span>}
+                          </div>
+                          <div className="admin-user-email">{u.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="admin-user-meta">{u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
+                    <td className="admin-user-meta">{(u.lang || 'de').toUpperCase()}</td>
+                    <td className="admin-user-meta">
+                      <span title={t('admin_users_col_progress')}>{watched}× watched</span>
+                      {' · '}
+                      <span style={{ color: 'var(--wine)' }}>{certified}× cert</span>
+                    </td>
+                    <td>
+                      <button className="btn-ghost admin-expand-btn" onClick={() => setExpandedId(isOpen ? null : u.id)}>
+                        {isOpen ? t('admin_user_collapse') : t('admin_user_expand')}
+                      </button>
+                    </td>
+                  </tr>
+                  {isOpen && (
+                    <tr className="admin-courses-row">
+                      <td colSpan={5}>
+                        <AdminUserCourses
+                          user={u}
+                          onSet={(courseUid, action) => setCourse(u.id, courseUid, action)}
+                          busyKey={busyKey}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              )
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+}
+
+function AdminUserCourses({ user, onSet, busyKey }) {
+  const t = useT()
+  // Show ALL courses (both langs) — admin needs to see/manage every uid.
+  const realCourses = COURSES.filter(c => c.contentType !== 'placeholder')
+  return (
+    <div className="admin-courses-grid">
+      {realCourses.map(c => {
+        const p = user.progress?.[c.uid] || {}
+        const certifiable = isCertifiable(c)
+        const state = (p.watched && p.testPassed) ? 'done'
+                    : (p.watched ? 'partial' : 'open')
+        const key = `${user.id}:${c.uid}`
+        const busy = busyKey === key
+        return (
+          <div key={c.uid} className={`admin-course-row state-${state}`}>
+            <div className="admin-course-meta">
+              <span className={`admin-course-state-dot state-${state}`} />
+              <div>
+                <div className="admin-course-title">
+                  <span className="admin-course-lang">{(c.lang || 'de').toUpperCase()}</span>{' '}
+                  {c.category}: {c.topic}
+                </div>
+                <div className="admin-course-status">
+                  {state === 'done' && t('admin_course_state_done')}
+                  {state === 'partial' && t('admin_course_state_partial')}
+                  {state === 'open' && t('admin_course_state_open')}
+                  {certifiable ? '' : ' · (' + t('cl_certifiable_no').slice(0, 24) + '…)'}
+                </div>
+              </div>
+            </div>
+            <div className="admin-course-actions">
+              {state !== 'done' && (
+                <button
+                  className="btn-primary admin-course-btn"
+                  disabled={busy}
+                  onClick={() => onSet(c.uid, 'complete')}
+                >
+                  ✓ {t('admin_course_set_done')}
+                </button>
+              )}
+              {state !== 'open' && (
+                <button
+                  className="btn-ghost admin-course-btn"
+                  disabled={busy}
+                  onClick={() => onSet(c.uid, 'reset')}
+                >
+                  ↻ {t('admin_course_reset')}
+                </button>
+              )}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

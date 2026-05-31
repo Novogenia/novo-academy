@@ -3248,6 +3248,37 @@ const UI = {
   // ---- App: logout / user menu ----
   user_signed_in_as:          { de: 'Angemeldet als',               en: 'Signed in as' },
   user_logout:                { de: 'Abmelden',                     en: 'Sign out' },
+
+  // ---- Admin area ----
+  admin_title:                { de: 'Admin',                         en: 'Admin' },
+  admin_back:                 { de: '← Zurück zur Akademie',         en: '← Back to the academy' },
+  admin_tab_dashboard:        { de: 'Dashboard',                     en: 'Dashboard' },
+  admin_tab_users:            { de: 'Nutzer',                        en: 'Users' },
+  admin_stat_total_users:     { de: 'Nutzer gesamt',                 en: 'Total users' },
+  admin_stat_new_7d:          { de: 'Neue in 7 Tagen',               en: 'New in last 7 days' },
+  admin_stat_new_30d:         { de: 'Neue in 30 Tagen',              en: 'New in last 30 days' },
+  admin_stat_active:          { de: 'Aktive (mind. 1 Kurs)',         en: 'Active (≥1 course watched)' },
+  admin_stat_certified:       { de: 'Mit Zertifikat',                en: 'With certificate' },
+  admin_stat_total_progress:  { de: 'Kurs-Abschlüsse total',         en: 'Total course completions' },
+  admin_stat_lang_split:      { de: 'Sprachverteilung',              en: 'Language split' },
+  admin_stat_growth:          { de: 'Nutzer-Wachstum (30 Tage)',     en: 'User growth (30 days)' },
+  admin_users_search:         { de: 'Nach Email oder Name suchen…',  en: 'Search by email or name…' },
+  admin_users_col_user:       { de: 'Nutzer',                        en: 'User' },
+  admin_users_col_signup:     { de: 'Registriert',                   en: 'Signed up' },
+  admin_users_col_lang:       { de: 'Sprache',                       en: 'Language' },
+  admin_users_col_progress:   { de: 'Fortschritt',                   en: 'Progress' },
+  admin_users_col_actions:    { de: 'Aktionen',                      en: 'Actions' },
+  admin_user_admin_badge:     { de: 'ADMIN',                         en: 'ADMIN' },
+  admin_user_expand:          { de: 'Kurse anzeigen',                en: 'Show courses' },
+  admin_user_collapse:        { de: 'Einklappen',                    en: 'Collapse' },
+  admin_course_state_done:    { de: 'Abgeschlossen',                 en: 'Completed' },
+  admin_course_state_partial: { de: 'Nur angesehen',                 en: 'Watched only' },
+  admin_course_state_open:    { de: 'Offen',                         en: 'Open' },
+  admin_course_set_done:      { de: 'Auf abgeschlossen setzen',      en: 'Mark as completed' },
+  admin_course_reset:         { de: 'Zurücksetzen',                  en: 'Reset to open' },
+  admin_loading:              { de: 'Lade Nutzerdaten…',             en: 'Loading user data…' },
+  admin_no_users:             { de: 'Keine Nutzer gefunden.',        en: 'No users found.' },
+  admin_no_matches:           { de: 'Keine Treffer für die Suche.',  en: 'No matches for the search.' },
 }
 
 export const t = (lang, key) => {

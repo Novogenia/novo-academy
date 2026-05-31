@@ -234,3 +234,117 @@ export const saveProgress = async (userId, state) => {
 }
 
 export const isUsingRealSupabase = () => USE_REAL
+
+/* =============================================================
+   PROFILE + LANGUAGE TRACKING
+   ============================================================= */
+
+/** Look up the current user's profile (incl. is_admin flag). */
+export const getMyProfile = async () => {
+  if (!_cachedSession?.user?.id) return null
+  if (USE_REAL && supabase) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, email, name, lang, is_admin, created_at')
+      .eq('id', _cachedSession.user.id)
+      .maybeSingle()
+    if (error) return null
+    return data
+  }
+  // Mock: pretend the mock user is admin (so the gear icon shows during dev)
+  return {
+    id: _cachedSession.user.id,
+    email: _cachedSession.user.email,
+    name: _cachedSession.profile?.name || _cachedSession.user.email,
+    lang: 'de',
+    is_admin: true,
+    created_at: new Date().toISOString(),
+  }
+}
+
+/** Persist the user's last-used language to their profile. */
+export const updateMyLang = async (lang) => {
+  if (!lang) return
+  if (!_cachedSession?.user?.id) return
+  if (USE_REAL && supabase) {
+    await supabase
+      .from('profiles')
+      .update({ lang, last_seen_at: new Date().toISOString() })
+      .eq('id', _cachedSession.user.id)
+  }
+  // mock: nothing to do (we don't persist lang in mock progress)
+}
+
+/* =============================================================
+   ADMIN-ONLY QUERIES — protected by RLS in production
+   ============================================================= */
+
+/** Return all profiles + their aggregated progress. Admin only. */
+export const adminLoadAllUsers = async () => {
+  if (USE_REAL && supabase) {
+    const [{ data: profiles }, { data: progressRows }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, email, name, lang, is_admin, created_at, last_seen_at')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('user_progress')
+        .select('user_id, course_uid, watched, test_passed, test_score, updated_at'),
+    ])
+    const progressByUser = {}
+    for (const r of progressRows || []) {
+      progressByUser[r.user_id] = progressByUser[r.user_id] || {}
+      progressByUser[r.user_id][r.course_uid] = {
+        watched: r.watched,
+        testPassed: r.test_passed,
+        testScore: r.test_score,
+        updatedAt: r.updated_at,
+      }
+    }
+    return (profiles || []).map(p => ({
+      ...p,
+      progress: progressByUser[p.id] || {},
+    }))
+  }
+  // Mock: synthesise a small list from localStorage mock users
+  const users = _loadMockUsers()
+  return Object.values(users).map(u => ({
+    id: u.id,
+    email: u.email,
+    name: u.name,
+    lang: 'de',
+    is_admin: false,
+    created_at: new Date().toISOString(),
+    last_seen_at: new Date().toISOString(),
+    progress: _loadMockProgress(u.id),
+  }))
+}
+
+/**
+ * Admin: set a single course's state for another user.
+ * action: 'complete' (watched + testPassed=true, score=100)
+ *       | 'reset'    (watched=false, testPassed=false, score=0)
+ */
+export const adminSetUserCourseState = async (userId, courseUid, action) => {
+  if (!userId || !courseUid) return { error: 'missing args' }
+  const payload = action === 'reset'
+    ? { user_id: userId, course_uid: courseUid, watched: false, test_passed: false, test_score: 0, updated_at: new Date().toISOString() }
+    : { user_id: userId, course_uid: courseUid, watched: true,  test_passed: true,  test_score: 100, updated_at: new Date().toISOString() }
+
+  if (USE_REAL && supabase) {
+    const { error } = await supabase
+      .from('user_progress')
+      .upsert(payload, { onConflict: 'user_id,course_uid' })
+    if (error) return { error: error.message }
+    return {}
+  }
+  // Mock: update local mock progress
+  const prog = _loadMockProgress(userId)
+  prog[courseUid] = {
+    watched: payload.watched,
+    testPassed: payload.test_passed,
+    testScore: payload.test_score,
+  }
+  _saveMockProgress(userId, prog)
+  return {}
+}
