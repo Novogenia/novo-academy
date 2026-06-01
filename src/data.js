@@ -3292,6 +3292,41 @@ const UI = {
   admin_action_delete_confirm:{ de: 'Diesen Nutzer wirklich entfernen?\n\nDer Account bleibt zwar bestehen, wird aber aus der Admin-Liste ausgeblendet und alle Kurs-Fortschritte gelöscht.',
                                 en: 'Really delete this user?\n\nThe account itself stays but disappears from the admin list and all course progress is deleted.' },
   admin_show_deleted:         { de: 'Gelöschte anzeigen',             en: 'Show deleted' },
+
+  // ---- Cookie Banner ----
+  cookie_title:               { de: 'Cookies & Datenschutz',          en: 'Cookies & Privacy' },
+  cookie_text:                { de: 'Wir verwenden notwendige Cookies für den Login-Bereich. Für die eingebetteten YouTube-Videos werden zusätzlich Cookies von Google geladen — dafür bitten wir um Ihre Zustimmung.',
+                                en: 'We use necessary cookies for the login area. Embedded YouTube videos load additional cookies from Google — we ask for your consent for these.' },
+  cookie_accept_all:          { de: 'Alle akzeptieren',               en: 'Accept all' },
+  cookie_necessary:           { de: 'Nur notwendige',                 en: 'Necessary only' },
+  cookie_privacy_link:        { de: 'Datenschutzerklärung',           en: 'Privacy Policy' },
+  cookie_yt_blocked:          { de: 'Video laden',                    en: 'Load video' },
+  cookie_yt_blocked_hint:     { de: 'Erfordert YouTube-Cookies. Bitte Einwilligung erteilen.',
+                                en: 'Requires YouTube cookies. Please give consent.' },
+  cookie_yt_allow:            { de: 'Einwilligung erteilen',          en: 'Give consent' },
+  cookie_settings:            { de: 'Cookie-Einstellungen',           en: 'Cookie settings' },
+  cookie_revoke:              { de: 'Einwilligung widerrufen',        en: 'Revoke consent' },
+
+  // ---- Footer / Legal ----
+  footer_impressum:           { de: 'Impressum',                      en: 'Legal Notice' },
+  footer_datenschutz:         { de: 'Datenschutz',                    en: 'Privacy Policy' },
+  footer_back:                { de: '← Zurück',                       en: '← Back' },
+
+  // ---- Impressum Page ----
+  impressum_title:            { de: 'Impressum',                      en: 'Legal Notice' },
+  impressum_operator:         { de: 'Betreiber',                      en: 'Operator' },
+  impressum_managing:         { de: 'Geschäftsführung',               en: 'Managing Director' },
+  impressum_register:         { de: 'Firmenbuch',                     en: 'Commercial Register' },
+  impressum_uidde:            { de: 'UID',                            en: 'VAT ID' },
+  impressum_authority:        { de: 'Aufsichtsbehörde',               en: 'Regulatory Authority' },
+  impressum_applicable_law:   { de: 'Anwendbare Rechtsvorschriften',  en: 'Applicable Regulations' },
+  impressum_contact:          { de: 'Kontakt',                        en: 'Contact' },
+  impressum_liability:        { de: 'Haftungshinweis',                en: 'Liability Notice' },
+  impressum_liability_text:   { de: 'Trotz sorgfältiger inhaltlicher Kontrolle übernehmen wir keine Haftung für die Inhalte externer Links. Für den Inhalt der verlinkten Seiten sind ausschließlich deren Betreiber verantwortlich.',
+                                en: 'Despite careful content control, we assume no liability for the content of external links. The operators of linked pages are solely responsible for their content.' },
+
+  // ---- Datenschutz Page ----
+  datenschutz_title:          { de: 'Datenschutzerklärung',           en: 'Privacy Policy' },
 }
 
 export const t = (lang, key) => {

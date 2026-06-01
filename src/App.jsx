@@ -294,6 +294,50 @@ function CategoryRow({ category, label, items, courseState, navigate }) {
   )
 }
 
+/* ===================== COOKIE CONSENT =====================
+   Stores 'all' | 'necessary' in localStorage key 'nova-cookie-consent'.
+   'all'       = user accepted all cookies (YouTube iframes load normally)
+   'necessary' = user declined optional cookies (YouTube iframes show a
+                 consent placeholder instead of loading)
+   null/undefined = not yet decided → banner is shown */
+const COOKIE_KEY = 'nova-cookie-consent'
+function useCookieConsent() {
+  const [consent, setConsentState] = useState(() => localStorage.getItem(COOKIE_KEY))
+  const setConsent = (val) => { localStorage.setItem(COOKIE_KEY, val); setConsentState(val) }
+  return [consent, setConsent]
+}
+
+function CookieBanner({ onAccept, onNecessary, onOpenPrivacy }) {
+  const t = useT()
+  return (
+    <div className="cookie-banner" role="dialog" aria-label={t('cookie_title')}>
+      <div className="cookie-banner-inner">
+        <div className="cookie-banner-text">
+          <strong>{t('cookie_title')}</strong>
+          <p>{t('cookie_text')} <button className="cookie-link" onClick={onOpenPrivacy}>{t('cookie_privacy_link')}</button></p>
+        </div>
+        <div className="cookie-banner-btns">
+          <button className="btn-secondary cookie-btn-necessary" onClick={onNecessary}>{t('cookie_necessary')}</button>
+          <button className="btn-primary cookie-btn-accept" onClick={onAccept}>{t('cookie_accept_all')}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* Tiny inline placeholder shown instead of a YouTube iframe when the user
+   has not given consent for third-party cookies. */
+function YtConsentPlaceholder({ onAllow }) {
+  const t = useT()
+  return (
+    <div className="yt-consent-placeholder">
+      <div className="yt-consent-icon">▶</div>
+      <p className="yt-consent-hint">{t('cookie_yt_blocked_hint')}</p>
+      <button className="btn-primary yt-consent-btn" onClick={onAllow}>{t('cookie_yt_allow')}</button>
+    </div>
+  )
+}
+
 /* ===================== YOUTUBE EMBED HELPERS =====================
    Modern browsers (Chrome/Edge/Safari) block iframe autoplay with sound
    unless the iframe is mounted via a direct user gesture AND already had
@@ -326,12 +370,13 @@ function ytUnmuteOnLoad(e) {
 /* Pass `youtubeId` to embed an actual YouTube video; otherwise shows a click-to-play thumbnail */
 function WelcomePlayer({ youtubeId = null, coverImage = null }) {
   const [playing, setPlaying] = useState(false)
+  const [consent, setConsent] = useCookieConsent()
   // Use explicit coverImage if provided (for videos without public YouTube thumbnails,
   // e.g. unlisted/private). Otherwise fall back to YouTube CDN thumbnail.
   const primarySrc = coverImage || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg` : null)
   return (
-    <div className="welcome-player" onClick={() => !playing && setPlaying(true)}>
-      {playing && youtubeId ? (
+    <div className="welcome-player" onClick={() => !playing && consent === 'all' && setPlaying(true)}>
+      {playing && youtubeId && consent === 'all' ? (
         <iframe
           className="welcome-iframe"
           src={`https://www.youtube.com/embed/${youtubeId}?${YT_EMBED_PARAMS}`}
@@ -365,9 +410,13 @@ function WelcomePlayer({ youtubeId = null, coverImage = null }) {
               }}
             />
           )}
-          <button className="welcome-play" aria-label="Play">
-            <Icon.Play />
-          </button>
+          {consent !== 'necessary' ? (
+            <button className="welcome-play" aria-label="Play video" onClick={() => setPlaying(true)}>
+              <Icon.Play />
+            </button>
+          ) : (
+            <YtConsentPlaceholder onAllow={() => setConsent('all')} />
+          )}
           {playing && !youtubeId && <div className="welcome-fake">▶ Playback (demo — YouTube ID missing)</div>}
         </>
       )}
@@ -653,18 +702,16 @@ function VideoBlock({ video, course }) {
 
 function FullVideo({ course, youtubeId, title }) {
   const [playing, setPlaying] = useState(false)
+  const [consent, setConsent] = useCookieConsent()
   const lang = useLang()
   const v = course.videos?.[0]
   const yt = youtubeId || course.youtubeId
-  // 1. explicit coverImage on course (for unlisted videos with no public YT thumb)
-  // 2. YouTube CDN thumbnail
-  // 3. fallback to tile thumbnail
   const explicitCover = course.coverImage
   const stillSrc = explicitCover
     || (yt ? `https://img.youtube.com/vi/${yt}/maxresdefault.jpg` : course.thumbnail)
   return (
-    <div className="cc-video-full" onClick={() => !playing && setPlaying(true)}>
-      {playing && yt ? (
+    <div className="cc-video-full" onClick={() => !playing && consent === 'all' && setPlaying(true)}>
+      {playing && yt && consent === 'all' ? (
         <iframe
           className="cc-video-iframe"
           src={`https://www.youtube.com/embed/${yt}?${YT_EMBED_PARAMS}`}
@@ -674,6 +721,8 @@ function FullVideo({ course, youtubeId, title }) {
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
         />
+      ) : consent === 'necessary' && yt ? (
+        <YtConsentPlaceholder onAllow={() => setConsent('all')} />
       ) : (
         <>
           <img src={stillSrc} alt="" className="cc-video-thumb"
@@ -1365,8 +1414,15 @@ export default function App() {
   const [langChosen, setLangChosen] = useState(hasChosenLang)
   const [session, setSession] = useState(() => getCurrentSession())
   const [profile, setProfile] = useState(null)
-  const [outerRoute, setOuterRoute] = useState(null) // null = derived from phase; otherwise 'landing'|'auth-signup'|'auth-login'|'admin'
+  const [outerRoute, setOuterRoute] = useState(null) // null = derived from phase; otherwise 'landing'|'auth-signup'|'auth-login'|'impressum'|'datenschutz'
   const [authBusy, setAuthBusy] = useState(false)
+  const [consent, setConsent] = useCookieConsent()
+  const showBanner = consent === null
+
+  // Set <html lang> attribute for screen readers
+  useEffect(() => {
+    document.documentElement.lang = lang === 'en' ? 'en' : 'de'
+  }, [lang])
 
   // Subscribe to auth changes (Supabase session + mock session)
   useEffect(() => {
@@ -1488,7 +1544,27 @@ export default function App() {
   /* ===== Decide which top-level screen to render ===== */
   let page
 
-  if (!langChosen) {
+  const legalFooterProps = {
+    onImpressum:     () => setOuterRoute('impressum'),
+    onDatenschutz:   () => setOuterRoute('datenschutz'),
+    onCookieSettings:() => setConsent(null),
+  }
+
+  if (outerRoute === 'impressum') {
+    page = (
+      <div className="legal-page-wrap">
+        <ImpressumPage onBack={() => setOuterRoute(null)} />
+        <LegalFooter {...legalFooterProps} />
+      </div>
+    )
+  } else if (outerRoute === 'datenschutz') {
+    page = (
+      <div className="legal-page-wrap">
+        <DatenschutzPage onBack={() => setOuterRoute(null)} onCookieSettings={() => setConsent(null)} />
+        <LegalFooter {...legalFooterProps} />
+      </div>
+    )
+  } else if (!langChosen) {
     page = <LangPickPage onPick={(l) => setLang(l)} />
   } else if (!session) {
     // Not logged in — show landing or auth
@@ -1502,6 +1578,9 @@ export default function App() {
           setLang={setLang}
           onSignUp={() => setOuterRoute('auth-signup')}
           onLogIn={() => setOuterRoute('auth-login')}
+          onImpressum={legalFooterProps.onImpressum}
+          onDatenschutz={legalFooterProps.onDatenschutz}
+          onCookieSettings={legalFooterProps.onCookieSettings}
         />
       )
     } else {
@@ -1553,16 +1632,17 @@ export default function App() {
   } else if (route.name === 'admin' && profile?.is_admin) {
     page = (
       <div className="app no-sidebar">
-        <main className="main">
+        <main className="main" id="main-content">
           <TopBar lang={lang} setLang={setLang} session={session} profile={profile} navigate={navigate} />
           <AdminPage onBack={() => navigate({ name: 'home' })} />
         </main>
+        <LegalFooter {...legalFooterProps} />
       </div>
     )
   } else {
     page = (
       <div className="app no-sidebar">
-        <main className="main">
+        <main className="main" id="main-content">
           <TopBar lang={lang} setLang={setLang} session={session} profile={profile} navigate={navigate} />
           <HomePage
             courseState={courseState}
@@ -1574,11 +1654,26 @@ export default function App() {
             lang={lang}
           />
         </main>
+        <LegalFooter {...legalFooterProps} />
       </div>
     )
   }
 
-  return <LangContext.Provider value={lang}>{page}</LangContext.Provider>
+  return (
+    <LangContext.Provider value={lang}>
+      <a className="skip-to-content" href="#main-content">
+        {lang === 'en' ? 'Skip to content' : 'Zum Inhalt springen'}
+      </a>
+      {page}
+      {showBanner && (
+        <CookieBanner
+          onAccept={() => setConsent('all')}
+          onNecessary={() => setConsent('necessary')}
+          onOpenPrivacy={() => setOuterRoute('datenschutz')}
+        />
+      )}
+    </LangContext.Provider>
+  )
 }
 
 /* ===================== TOP BAR ===================== */
@@ -1675,7 +1770,7 @@ function LangPickPage({ onPick }) {
 }
 
 /* ===================== LANDING PAGE (logged-out intro) ===================== */
-function LandingPage({ lang, setLang, onSignUp, onLogIn }) {
+function LandingPage({ lang, setLang, onSignUp, onLogIn, onImpressum, onDatenschutz, onCookieSettings }) {
   const t = useT()
   return (
     <div className="landing-page">
@@ -1746,8 +1841,163 @@ function LandingPage({ lang, setLang, onSignUp, onLogIn }) {
       </section>
 
       <footer className="landing-footer">
-        <span>© Novogenia GmbH</span>
+        <LegalFooter
+          onImpressum={onImpressum}
+          onDatenschutz={onDatenschutz}
+          onCookieSettings={onCookieSettings}
+        />
       </footer>
+    </div>
+  )
+}
+
+/* ===================== LEGAL FOOTER ===================== */
+function LegalFooter({ onImpressum, onDatenschutz, onCookieSettings }) {
+  const t = useT()
+  return (
+    <footer className="legal-footer">
+      <span>© {new Date().getFullYear()} Novogenia GmbH</span>
+      <span className="legal-footer-sep">·</span>
+      <button className="legal-footer-link" onClick={onImpressum}>{t('footer_impressum')}</button>
+      <span className="legal-footer-sep">·</span>
+      <button className="legal-footer-link" onClick={onDatenschutz}>{t('footer_datenschutz')}</button>
+      <span className="legal-footer-sep">·</span>
+      <button className="legal-footer-link" onClick={onCookieSettings}>{t('cookie_settings')}</button>
+    </footer>
+  )
+}
+
+/* ===================== IMPRESSUM PAGE ===================== */
+function ImpressumPage({ onBack }) {
+  const t = useT()
+  const lang = useLang()
+  const L = lang === 'en'
+  return (
+    <div className="legal-page content">
+      <button className="btn-back" onClick={onBack}>{t('footer_back')}</button>
+      <h1 className="legal-page-title">{t('impressum_title')}</h1>
+
+      <section className="legal-section">
+        <h2>{t('impressum_operator')}</h2>
+        <p>
+          Novogenia GmbH<br />
+          Strass 19<br />
+          5301 Eugendorf<br />
+          {L ? 'Austria' : 'Österreich'}
+        </p>
+      </section>
+
+      <section className="legal-section">
+        <h2>{t('impressum_managing')}</h2>
+        <p>Matthias Probst</p>
+      </section>
+
+      <section className="legal-section">
+        <h2>{t('impressum_register')}</h2>
+        <p>FN 531162 x · {L ? 'Regional Court Salzburg' : 'Landesgericht Salzburg'}</p>
+      </section>
+
+      <section className="legal-section">
+        <h2>{t('impressum_uidde')}</h2>
+        <p>ATU64713304</p>
+      </section>
+
+      <section className="legal-section">
+        <h2>{t('impressum_contact')}</h2>
+        <p>
+          E-Mail: <a href="mailto:service@novogenia.com">service@novogenia.com</a>
+        </p>
+      </section>
+
+      <section className="legal-section">
+        <h2>{t('impressum_authority')}</h2>
+        <p>
+          Bezirkshauptmannschaft Salzburg-Umgebung<br />
+          Karl-Wurmb-Straße 17, 5020 Salzburg<br />
+          {L ? 'Federal Ministry for Social Affairs, Health, Care and Consumer Protection' : 'Bundesministerium für Soziales, Gesundheit, Pflege und Konsumentenschutz'}
+        </p>
+      </section>
+
+      <section className="legal-section">
+        <h2>{t('impressum_applicable_law')}</h2>
+        <p>
+          {L
+            ? 'Austrian Trade Regulations 1994 (GewO), Genetic Technology Act (GTG), accessible via RIS Austria (ris.bka.gv.at).'
+            : 'Gewerbeordnung 1994, Gentechnikgesetz (GTG), abrufbar über RIS Austria (ris.bka.gv.at).'}
+        </p>
+      </section>
+
+      <section className="legal-section">
+        <h2>{t('impressum_liability')}</h2>
+        <p>{t('impressum_liability_text')}</p>
+      </section>
+    </div>
+  )
+}
+
+/* ===================== DATENSCHUTZ PAGE ===================== */
+function DatenschutzPage({ onBack, onCookieSettings }) {
+  const t = useT()
+  const lang = useLang()
+  const [consent] = useCookieConsent()
+  const L = lang === 'en'
+  return (
+    <div className="legal-page content">
+      <button className="btn-back" onClick={onBack}>{t('footer_back')}</button>
+      <h1 className="legal-page-title">{t('datenschutz_title')}</h1>
+
+      <section className="legal-section">
+        <h2>{L ? 'Responsible Party' : 'Verantwortlicher'}</h2>
+        <p>
+          Novogenia GmbH<br />
+          Strass 19, 5301 Eugendorf, {L ? 'Austria' : 'Österreich'}<br />
+          E-Mail: <a href="mailto:datenschutz@novogenia.com">datenschutz@novogenia.com</a>
+        </p>
+      </section>
+
+      <section className="legal-section">
+        <h2>{L ? 'What data we process' : 'Welche Daten wir verarbeiten'}</h2>
+        <p>{L
+          ? 'When you create an account, we store your e-mail address, your chosen display name, your language preference, and your course progress (which videos you watched and which tests you passed). This data is stored in Supabase (eu-central-1, Frankfurt, Germany) and processed exclusively for operating NOVO ACADEMY.'
+          : 'Bei Kontoerstellung speichern wir Ihre E-Mail-Adresse, Ihren gewählten Anzeigenamen, Ihre Spracheinstellung und Ihren Kursfortschritt (welche Videos gesehen, welche Tests bestanden). Diese Daten werden in Supabase (eu-central-1, Frankfurt) gespeichert und ausschließlich zum Betrieb von NOVO ACADEMY verarbeitet.'}</p>
+      </section>
+
+      <section className="legal-section">
+        <h2>{L ? 'Legal basis' : 'Rechtsgrundlage'}</h2>
+        <p>{L
+          ? 'Processing is based on your consent (Art. 6(1)(a) GDPR) when you register, and on contract performance (Art. 6(1)(b) GDPR) for providing the academy service.'
+          : 'Die Verarbeitung erfolgt auf Grundlage Ihrer Einwilligung (Art. 6 Abs. 1 lit. a DSGVO) bei der Registrierung sowie zur Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) für die Erbringung des Akademie-Dienstes.'}</p>
+      </section>
+
+      <section className="legal-section">
+        <h2>{L ? 'Cookies' : 'Cookies'}</h2>
+        <p>{L
+          ? 'NOVO ACADEMY uses session cookies that are technically necessary for the login function (Supabase Auth). If you consent to optional cookies, embedded YouTube videos load additional cookies from Google/YouTube. You can withdraw your consent at any time.'
+          : 'NOVO ACADEMY verwendet Session-Cookies, die technisch notwendig für die Login-Funktion sind (Supabase Auth). Wenn Sie optionalen Cookies zustimmen, laden eingebettete YouTube-Videos zusätzlich Cookies von Google/YouTube. Ihre Einwilligung können Sie jederzeit widerrufen.'}</p>
+        <button className="btn-secondary legal-cookie-btn" onClick={onCookieSettings}>
+          {consent === 'all'
+            ? t('cookie_revoke')
+            : t('cookie_settings')}
+        </button>
+      </section>
+
+      <section className="legal-section">
+        <h2>{L ? 'Third-party services' : 'Drittanbieter'}</h2>
+        <ul className="legal-list">
+          <li><strong>Supabase</strong> — {L ? 'Auth & database (eu-central-1 Frankfurt, Germany). Privacy policy: supabase.com/privacy' : 'Auth & Datenbank (eu-central-1 Frankfurt). Datenschutz: supabase.com/privacy'}</li>
+          <li><strong>YouTube / Google</strong> — {L ? 'Video embedding (only with your consent). Privacy policy: policies.google.com/privacy' : 'Video-Einbettung (nur mit Ihrer Einwilligung). Datenschutz: policies.google.com/privacy'}</li>
+        </ul>
+      </section>
+
+      <section className="legal-section">
+        <h2>{L ? 'Your rights' : 'Ihre Rechte'}</h2>
+        <p>{L
+          ? 'You have the right to access, correct, delete, or export your data, and to lodge a complaint with the Austrian Data Protection Authority (Datenschutzbehörde, Barichgasse 40–42, 1030 Vienna, dsb.gv.at).'
+          : 'Sie haben das Recht auf Auskunft, Berichtigung, Löschung oder Datenübertragbarkeit sowie das Recht, Beschwerde bei der österreichischen Datenschutzbehörde einzulegen (Barichgasse 40–42, 1030 Wien, dsb.gv.at).'}</p>
+        <p>{L
+          ? 'To exercise your rights, contact: datenschutz@novogenia.com'
+          : 'Zur Ausübung Ihrer Rechte wenden Sie sich an: datenschutz@novogenia.com'}</p>
+      </section>
     </div>
   )
 }
