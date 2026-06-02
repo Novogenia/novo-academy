@@ -1373,9 +1373,7 @@ export const COURSES_EN = [
       'How can Calcium and Zinc be absorbed simultaneously despite mutual blockade?',
     ],
     brandNoticeAboveVideos: true,
-    /* Note: previous videoSegments (Microtransporter, Precision Supplementation,
-       IV Therapy) were the wrong videos for this module — removed.
-       Awaiting correct EN video from Novogenia. */
+    youtubeId: 'TIHnA7J6EP4',
     postVideoText:
       'With this background you can discuss the logic behind personalized supplementation on solid ground with your clients and explain microtransporter technology clearly — including the practical applications in pellets and IV-based delivery.',
     questions: [
@@ -1675,9 +1673,7 @@ export const COURSES_EN = [
       'Practical relevance in consultation',
     ],
     thumbnail: T(24),
-    /* Note: a dedicated English pharmacogenetics / drug-intolerance video
-       is not yet recorded — the course renders a "Video Coming Soon" notice
-       via App.jsx's no-video fallback. Test + content remain functional. */
+    youtubeId: 'SgzAZyUIx-0',
     introQuestionsHeader: 'This training answers:',
     introQuestions: [
       'Why do medications work differently in different people?',
