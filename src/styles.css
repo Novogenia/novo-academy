@@ -46,6 +46,12 @@ a { color: inherit; text-decoration: none; }
 
 /* ============ APP SHELL ============ */
 .app { display: flex; min-height: 100vh; background: var(--bg); }
+/* The authenticated shell renders <main> + <LegalFooter> as siblings inside .app.
+   .app defaults to flex-direction:row (legacy sidebar layout), which makes the
+   footer a horizontal sibling that starves <main> to 0 width on narrow screens
+   (blank page). Stack them vertically so <main> is full-width and the footer
+   sits at the bottom. */
+.app.no-sidebar { flex-direction: column; }
 
 /* ============ SIDEBAR ============ */
 .sidebar {
