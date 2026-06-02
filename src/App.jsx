@@ -1519,10 +1519,29 @@ export default function App() {
     }
   }, [courseState, session?.user?.id])
 
+  // Browser / phone Back-button support: mirror in-app navigation into the
+  // History API so Back and Forward move between app screens instead of leaving
+  // the site. The URL stays the same (GitHub Pages has no SPA server routing);
+  // the route object is stashed in history.state and restored on popstate.
   const navigate = (r) => {
     window.scrollTo(0, 0)
+    try { window.history.pushState({ __novoRoute: r }, '') } catch {}
     setRoute(r)
   }
+
+  const routeRef = useRef(route)
+  routeRef.current = route
+  useEffect(() => {
+    // Seed the current history entry so the first Back returns here, not off-site.
+    try { window.history.replaceState({ __novoRoute: routeRef.current }, '') } catch {}
+    const onPop = (e) => {
+      const r = e.state && e.state.__novoRoute
+      window.scrollTo(0, 0)
+      setRoute(r || { name: 'home' })
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
 
   const markCompleted = (course) => {
     const k = courseKey(course)
