@@ -2606,3 +2606,190 @@ a { color: inherit; text-decoration: none; }
   font-size: 13px;
   padding: 8px 16px;
 }
+
+
+/* ============================================================
+   RESPONSIVE / MOBILE  (added — full mobile pass)
+   Breakpoints: <=900px tablet/large phone, <=600px phone.
+   Goals: no horizontal overflow, hide swipe-only scroll buttons,
+   tighten paddings + typography, fit the certificate.
+   ============================================================ */
+
+/* --- Global overflow guard + iOS text behaviour --- */
+html { -webkit-text-size-adjust: 100%; }
+@media (max-width: 900px) {
+  html, body { overflow-x: hidden; }
+  .app, .main { max-width: 100%; overflow-x: hidden; }
+}
+
+/* ===================== <= 900px (tablets / large phones) ===================== */
+@media (max-width: 900px) {
+  /* Topbar — let title + actions wrap, shrink the logo.
+     (.topbar prefix needed to outrank the base `.page-title h1` rule) */
+  .topbar { padding: 16px 16px 8px; flex-wrap: wrap; gap: 10px 12px; }
+  .topbar .page-title-logo { font-size: 26px; }
+  .topbar-actions { gap: 8px; flex-wrap: wrap; }
+
+  /* Content gutters */
+  .content { padding: 12px 16px 56px; }
+
+  /* Swipe-only rows: hide the absolutely-positioned scroll buttons
+     (they overflow the viewport as the stray purple circles on phones) */
+  .scroll-btn { display: none !important; }
+  .row { gap: 16px; padding: 24px 16px 18px 4px; }
+
+  /* Section headings */
+  .courses-section-header { margin-top: 56px; margin-bottom: 36px; }
+  .courses-section-title { font-size: 30px; gap: 12px; }
+  .courses-section-title .cs-accent { max-width: 120px; }
+  .main-cat { margin-top: 56px; }
+  .main-cat-title { gap: 12px; margin-bottom: 24px; }
+
+  /* Course detail / content pages */
+  .course-landing-bar { padding: 16px 16px 0; }
+  .course-hero { height: 240px; margin-top: 16px; }
+  .course-hero-title { font-size: 34px; }
+  .course-body { padding: 0 18px; }
+  .cc-wrap { padding: 0 18px; }
+  .cc-title { font-size: 28px; }
+
+  /* Certificate: it's a fixed 794x1123 A4 design. Scale the whole thing down
+     with zoom (keeps the internal coordinate system + aspect ratio intact);
+     flex-shrink:0 stops the flexbox from squishing it into a distorted sliver.
+     overflow-x:auto is the fallback scroll if a browser ignores zoom. */
+  .cert-view { padding: 16px 12px 48px; overflow-x: hidden; }
+  .cert-toolbar { flex-wrap: wrap; gap: 8px; }
+  .cert-canvas { width: 100%; overflow-x: auto; justify-content: flex-start; -webkit-overflow-scrolling: touch; }
+  .cert-canvas .certificate { flex-shrink: 0; zoom: 0.42; }
+}
+
+/* ===================== <= 600px (phones) ===================== */
+@media (max-width: 600px) {
+  body { font-size: 13.5px; }
+
+  /* Topbar */
+  .topbar { padding: 14px 14px 6px; }
+  .topbar .page-title-logo { font-size: 22px; }
+
+  /* Content gutters tighter */
+  .content { padding: 10px 14px 48px; }
+
+  /* Home: intro videos + progress */
+  .home-top-row { gap: 16px; margin: 8px 0 16px; }
+  .welcome-title { font-size: 21px; }
+  .welcome-play { width: 64px; height: 64px; }
+  .welcome-play svg { width: 26px; height: 26px; }
+  .academy-progress { padding: 14px 16px; }
+  .ap-text { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .ap-num { font-size: 26px; }
+
+  /* Section headings */
+  .courses-section-title { font-size: 24px; flex-wrap: wrap; line-height: 1.1; }
+  .courses-section-title .cs-accent { display: none; }
+  .courses-section-sub { font-size: 14px; }
+  .main-cat { margin-top: 44px; }
+  .main-cat-text { font-size: 16px; letter-spacing: 1.2px; white-space: normal; }
+
+  /* Category rows */
+  .cat-row { margin-bottom: 40px; }
+  .cat-row-head { gap: 10px; margin-bottom: 14px; }
+  .cat-row-icon { width: 38px; height: 38px; border-radius: 10px; }
+  .cat-row-icon svg { width: 22px; height: 22px; }
+  .cat-row-title { font-size: 18px; gap: 6px; }
+  .cat-row-products { font-size: 12.5px; }
+
+  /* Tiles: show one card with a peek of the next (swipeable) */
+  .tile { width: min(78vw, 300px); }
+  .tile-title { font-size: 14.5px; }
+  .seal-stamp { width: 66px; height: 66px; top: -16px; right: -10px; }
+
+  /* Course landing */
+  .course-hero { height: 190px; border-radius: 12px; }
+  .course-hero-text { left: 18px; right: 18px; bottom: 16px; }
+  .course-hero-cat { font-size: 11px; letter-spacing: 1.5px; margin-bottom: 8px; }
+  .course-hero-title { font-size: 25px; letter-spacing: -0.4px; }
+  .course-body { padding: 0 16px; margin-top: 20px; }
+  .course-paragraph { font-size: 14.5px; line-height: 1.55; }
+  .course-actions { gap: 10px; }
+  .btn-primary.big, .btn-ghost.big { width: 100%; justify-content: center; }
+
+  /* Course content page */
+  .cc-wrap { padding: 0 16px; }
+  .cc-title { font-size: 24px; }
+  .cc-title-row { flex-direction: column; gap: 12px; margin-bottom: 22px; }
+  .cc-cert-badge { align-self: flex-start; }
+  .cc-h { font-size: 20px; margin: 32px 0 14px; }
+  .cc-paragraph { font-size: 14.5px; line-height: 1.6; text-align: left; }
+  .cc-question-list { font-size: 14px; }
+  .cc-video-play { width: 64px; height: 64px; }
+  .cc-video-play svg { width: 26px; height: 26px; }
+  .cc-complete { padding: 22px 18px; }
+  .cc-action-btn { padding: 18px 18px; gap: 14px; border-radius: 14px; }
+  .cc-action-icon { width: 54px; height: 54px; border-radius: 14px; }
+  .cc-action-icon svg { width: 30px; height: 30px; }
+  .cc-action-title { font-size: 16px; }
+  .cc-action-sub { font-size: 12px; }
+
+  /* Brand notice */
+  .brand-notice { padding: 16px 16px; gap: 12px; margin: 22px 0 26px; }
+  .brand-notice-icon { width: 34px; height: 34px; }
+
+  /* FAQ */
+  .faq-group-title { font-size: 18px; }
+  .faq-q { padding: 14px 14px; font-size: 14.5px; gap: 12px; }
+  .faq-a { padding: 14px 14px 18px; font-size: 14px; }
+
+  /* Test page */
+  .test-q { padding: 18px 16px; border-radius: 12px; }
+  .test-q-legend { font-size: 15px; gap: 10px; }
+  .test-options { gap: 7px; }
+  .test-opt { padding: 11px 12px; gap: 10px; }
+  .test-opt-letter { width: 26px; height: 26px; }
+  .test-opt-text { font-size: 14px; }
+  .test-img-demo { padding: 18px 16px; }
+  .test-img-demo h3 { font-size: 19px; }
+
+  /* Test result */
+  .tr-card { margin: 32px 14px 0; padding: 36px 22px; border-radius: 16px; }
+  .tr-score-ring { width: 130px; height: 130px; }
+  .tr-score-num { font-size: 40px; }
+  .tr-h { font-size: 26px; }
+
+  /* Certificate CTA on home — drop the decorative preview to avoid overflow */
+  .cert-cta { padding: 28px 20px; border-radius: 18px; min-height: 0; gap: 0; }
+  .cert-cta-body h2 { font-size: 24px; }
+  .cert-cta-visual { display: none; }
+  .cert-actions { gap: 8px; }
+
+  /* Grids that should stack */
+  .home-bonus-grid, .related-videos-grid { grid-template-columns: 1fr; }
+
+  /* Lang picker / auth / legal */
+  .langpick-card { padding: 36px 22px; }
+  .legal-page { padding: 28px 16px 48px; }
+
+  /* Document download cards: the image thumbnail is a fixed 228px which
+     blows the card past the viewport — shrink it and let text truncate */
+  .cc-doc { gap: 12px; padding: 14px; }
+  .cc-doc-thumb { width: 96px; height: 60px; }
+  .cc-doc-text { min-width: 0; }
+  .cc-doc-title { overflow-wrap: anywhere; }
+
+  /* Landing header: the centered logo + lang switcher + login button don't fit
+     one line on a phone. Put the logo in flow (left), allow wrap, shrink the
+     controls so the right group drops below the logo when space runs out. */
+  .landing-header { padding: 12px 0; }
+  .landing-header-inner { padding: 0 12px; gap: 6px 8px; flex-wrap: wrap; }
+  .landing-logo { position: static; transform: none; font-size: 19px; }
+  .landing-header-right { gap: 6px; }
+  .landing-header .lang-btn { padding: 5px 9px; }
+  .landing-login-btn { padding: 7px 11px; font-size: 12px; }
+
+  /* Small phones: scale the certificate down a touch more so it fits */
+  .cert-canvas .certificate { zoom: 0.38; }
+
+  /* Prevent iOS zoom-on-focus: form inputs must be >=16px */
+  .auth-field input,
+  .cert-input-wrap input,
+  .admin-search { font-size: 16px; }
+}
