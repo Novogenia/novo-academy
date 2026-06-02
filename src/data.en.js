@@ -1128,7 +1128,9 @@ export const COURSES_EN = [
       'Anti-aging strategies with measurable effect',
     ],
     thumbnail: '/thumbnails/course-bioage.jpg',
-    youtubeId: 'udTodouyDsA',
+    /* No youtubeId on purpose: the previous EN clip (udTodouyDsA — "free radicals
+       & aging") was the WRONG video for this module. Falls back to the
+       "Video coming soon" placeholder until the correct EN video is recorded. */
     introQuestionsHeader: 'This training answers:',
     introQuestions: [
       'What is the difference between chronological and biological age?',
