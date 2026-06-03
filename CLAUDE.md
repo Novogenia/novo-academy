@@ -357,6 +357,7 @@ git push origin main
 
 | Datum | Änderung |
 |---|---|
+| 2026-06-03 | **QA-Fixes (Sandras Testbericht)**: #1 Fortschritt zählt nur noch zertifizierbare Module (100 % erreichbar); #3 DE `supp-sci` falsches Video (n9pkNybj1LU = Ernährung) entfernt → Platzhalter; #4 Test-Erfolgsmeldung klargestellt (zertifiziert erst nach Training-Abschluss); #5 DE-Marketing „Genetics Coach" → „Genetik Coach" (neuer i18n-Key `brand_coach`). Offen: #2 Downloads (Hosting), #6 Zert-Umfang (pharma braucht Test), #7 FAQ-Thumbnails. |
 | 2026-06-03 | **SOP „Schulungen anlegen"** ergänzt (Abschnitt 18): Video → YouTube-Transkript → MC-Fragen aus Transkript, aktiv nach Zusatzmaterial fragen, Modulstruktur (Wissenschaft → Beratung → FAQ), Material-Fallback Englisch, Test-Fragen an übersetztes Video anpassen (keine 1:1-Übersetzung) |
 | 2026-06-03 | **Verbindliche Grundregeln** ergänzt (siehe ganz oben): Live-System-Schutz — keine Datenschutz/Security-Risiken, Funktion bestehender Nutzer nie zerstören, nichts Unfertiges live (außer Videos), CLAUDE.md-Pflicht. Gilt für neue Mitarbeiter. |
 | 2026-06-03 | 34 englische Analyseberatungs-Videos (4K) via yt-dlp heruntergeladen → `LONG FORM ENG` + Kopie nach `EXTERNAL MATERIAL\…\LONG FORM VIDEOS ENG` (Heygen-Quellen) |

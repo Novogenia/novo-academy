@@ -2008,8 +2008,9 @@ export const COURSES = [
       'Bioverfügbarkeit von Vitaminen und Mineralien',
     ],
     thumbnail: T(15),
-    youtubeId: 'n9pkNybj1LU',
-    /* YouTube video is unlisted — public thumbnails return 404. Use local cover. */
+    /* Kein youtubeId: die bisherige ID (n9pkNybj1LU) war das FALSCHE Video
+       ("GESUND oder UNGESUND?" aus der Ernährung). Zeigt "VIDEO COMING SOON",
+       bis das richtige deutsche Supplements-Video vorliegt. */
     coverImage: '/thumbnails/supp-sci-cover.jpg',
     introQuestionsHeader: 'In dieser Schulung bekommst du Antworten auf folgende Fragen:',
     introQuestions: [
@@ -3190,8 +3191,9 @@ const UI = {
                                 en: 'You can change this later at any time.' },
 
   // ---- Landing page ----
-  landing_hero_title:         { de: 'Werde Genetics Coach',         en: 'Become a Genetics Coach' },
-  landing_hero_sub:           { de: 'Die offizielle Schulungsplattform von Novogenia. Lerne in deinem Tempo, schließe Module mit Tests ab und erhalte dein offizielles Zertifikat als Novogenia Genetics Coach.',
+  brand_coach:                { de: 'Genetik Coach',                en: 'Genetics Coach' },
+  landing_hero_title:         { de: 'Werde Genetik Coach',           en: 'Become a Genetics Coach' },
+  landing_hero_sub:           { de: 'Die offizielle Schulungsplattform von Novogenia. Lerne in deinem Tempo, schließe Module mit Tests ab und erhalte dein offizielles Zertifikat als Novogenia Genetik Coach.',
                                 en: 'The official Novogenia training platform. Learn at your own pace, complete modules with tests, and earn your official Novogenia Genetics Coach certificate.' },
   landing_cta_signup:         { de: 'Kostenlos starten',            en: 'Get started for free' },
   landing_cta_login:          { de: 'Schon registriert? Anmelden',  en: 'Already registered? Sign in' },

@@ -439,9 +439,10 @@ function HomePage({ courseState, navigate, certName, setCertName, completedCerti
     () => groupForDisplay(lang),
     [lang]
   )
-  // Exclude placeholders from progress count — they aren't real modules
-  // and respect the current language (only the visible courses count toward "100%")
-  const realCourses = COURSES.filter(c => c.contentType !== 'placeholder' && (c.lang || 'de') === lang)
+  // Progress counts only CERTIFIABLE modules (exclude FAQ + supplementary +
+  // placeholders) so that 100% is actually reachable. FAQ/supplementary modules
+  // have no test/completion, so including them made the max stuck at ~68%.
+  const realCourses = COURSES.filter(c => isCertifiable(c) && c.contentType !== 'placeholder' && (c.lang || 'de') === lang)
   const totalModules = realCourses.length
   const completedModules = realCourses.filter(c => courseState[courseKey(c)]?.watched).length
   const pct = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0
@@ -571,7 +572,7 @@ function CertificateCTA({ name, onNameChange, onGenerate, onShowSample, complete
       <div className="cert-cta-body">
         <h2>{t('cert_cta_title')}</h2>
         <p>
-          {t('cert_cta_intro_a')}<strong>Novogenia Genetics Coach</strong>{t('cert_cta_intro_b')}<strong>{completedCount}</strong>{t('cert_cta_intro_c')}
+          {t('cert_cta_intro_a')}<strong>Novogenia {t('brand_coach')}</strong>{t('cert_cta_intro_b')}<strong>{completedCount}</strong>{t('cert_cta_intro_c')}
         </p>
         <div className="cert-form">
           <label className="cert-input-wrap">
@@ -1190,8 +1191,8 @@ function TestResultPage({ course, score, passed, navigate, onBack }) {
         <p className="tr-msg">
           {passed
             ? (L
-                ? `You passed the "${course.topic}" test with ${score}%. The module is now marked as "Certified".`
-                : `Du hast den Test zu „${course.topic}" mit ${score}% erfolgreich bestanden. Das Modul ist ab sofort als „Zertifiziert" markiert.`)
+                ? `You passed the "${course.topic}" test with ${score}%. Once the training is also completed, the module counts as certified.`
+                : `Du hast den Test zu „${course.topic}" mit ${score}% bestanden. Sobald auch das Training abgeschlossen ist, gilt das Modul als zertifiziert.`)
             : (L
                 ? `You achieved ${score}% correct answers. At least 80% is required to pass. Review the course once more and try again.`
                 : `Du hast ${score}% korrekte Antworten erreicht. Zum Bestehen sind mindestens 80% erforderlich. Schau dir den Kurs noch einmal an und versuche es erneut.`)}
