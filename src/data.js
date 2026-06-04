@@ -104,13 +104,13 @@ export const COURSES = [
         size: '154 MB',
         type: 'pptx',
         thumbnail: '/slide1-thumb.jpg',
-        url: '/course-materials/gene-diet/01-wissenschaftliche-basis/course/POWERPOINT_Die_Gen-Diaet.pptx',
+        url: 'https://github.com/Novogenia-AG/novo-academy/releases/download/course-materials/POWERPOINT_Die_Gen-Diaet.pptx',
       },
       {
         title: 'NovoAcademy Demo Bericht - Ernährungsplan',
         size: '113 MB',
         type: 'pdf',
-        url: '/course-materials/nutrition/Demo_NovoDaily_Nutrition_Plan.pdf',
+        url: 'https://github.com/Novogenia-AG/novo-academy/releases/download/course-materials/Demo_NovoDaily_Nutrition_Plan.pdf',
       },
       {
         title: 'NovoAcademy Demo Bericht - Gen-Diät Analysebericht',
@@ -297,7 +297,7 @@ export const COURSES = [
         title: 'NovoAcademy Demo Bericht - Ernährungsplan',
         size: '113 MB',
         type: 'pdf',
-        url: '/course-materials/nutrition/Demo_NovoDaily_Nutrition_Plan.pdf',
+        url: 'https://github.com/Novogenia-AG/novo-academy/releases/download/course-materials/Demo_NovoDaily_Nutrition_Plan.pdf',
       },
       {
         title: 'NovoAcademy Demo Bericht - Gen-Diät Analysebericht',
@@ -822,13 +822,13 @@ export const COURSES = [
         size: '78 MB',
         type: 'pptx',        thumbnail: '/thumbnails/pptx-template.jpg',
 
-        url: '/course-materials/nutrition/Schulungsfolien_Nutrition.pptx',
+        url: 'https://github.com/Novogenia-AG/novo-academy/releases/download/course-materials/Schulungsfolien_Nutrition.pptx',
       },
       {
         title: 'NovoAcademy Demo Bericht - NovoDaily Nutrition Plan',
         size: '113 MB',
         type: 'pdf',
-        url: '/course-materials/nutrition/Demo_NovoDaily_Nutrition_Plan.pdf',
+        url: 'https://github.com/Novogenia-AG/novo-academy/releases/download/course-materials/Demo_NovoDaily_Nutrition_Plan.pdf',
       },
       {
         title: 'NovoAcademy Demo Bericht - NovoDaily Lifestyle',
@@ -949,7 +949,7 @@ export const COURSES = [
         title: 'NovoAcademy Demo Bericht - NovoDaily Nutrition Plan',
         size: '113 MB',
         type: 'pdf',
-        url: '/course-materials/nutrition/Demo_NovoDaily_Nutrition_Plan.pdf',
+        url: 'https://github.com/Novogenia-AG/novo-academy/releases/download/course-materials/Demo_NovoDaily_Nutrition_Plan.pdf',
       },
       {
         title: 'NovoAcademy Demo Bericht - NovoDaily Lifestyle',
@@ -1159,7 +1159,7 @@ export const COURSES = [
         size: '194 MB',
         type: 'pptx',        thumbnail: '/thumbnails/pptx-template.jpg',
 
-        url: '/course-materials/performance/Schulungsfolien_Performance.pptx',
+        url: 'https://github.com/Novogenia-AG/novo-academy/releases/download/course-materials/Schulungsfolien_Performance.pptx',
       },
       {
         title: 'NovoAcademy Demo Bericht - Performance Sensor',
@@ -1171,7 +1171,7 @@ export const COURSES = [
         title: 'NovoAcademy Demo Bericht - Performance Trainingsplan',
         size: '73 MB',
         type: 'pdf',
-        url: '/course-materials/performance/Demo_Performance_Trainingsplan.pdf',
+        url: 'https://github.com/Novogenia-AG/novo-academy/releases/download/course-materials/Demo_Performance_Trainingsplan.pdf',
       },
       {
         title: 'NovoAcademy Demo Bericht - Nutrition Plan (Performance)',
@@ -1286,7 +1286,7 @@ export const COURSES = [
         size: '78 MB',
         type: 'pptx',
         thumbnail: '/thumbnails/pptx-template.jpg',
-        url: '/course-materials/detox/Schulungsfolien_Detox.pptx',
+        url: 'https://github.com/Novogenia-AG/novo-academy/releases/download/course-materials/Schulungsfolien_Detox.pptx',
       },
       {
         title: 'NovoAcademy Demo Bericht - NovoDaily Lifestyle',
@@ -2086,7 +2086,7 @@ export const COURSES = [
         size: '94 MB',
         type: 'pptx',        thumbnail: '/thumbnails/pptx-template.jpg',
 
-        url: '/course-materials/supplements/Schulungsfolien_Supplements.pptx',
+        url: 'https://github.com/Novogenia-AG/novo-academy/releases/download/course-materials/Schulungsfolien_Supplements.pptx',
       },
       {
         title: 'NovoAcademy Science PDF - Slow-Release Mikrotransporter — Pellet-Technologie',
@@ -2286,7 +2286,7 @@ export const COURSES = [
         size: '114 MB',
         type: 'pptx',
         thumbnail: '/thumbnails/pptx-template.jpg',
-        url: '/course-materials/beauty/Schulungsfolien_Beauty.pptx',
+        url: 'https://github.com/Novogenia-AG/novo-academy/releases/download/course-materials/Schulungsfolien_Beauty.pptx',
       },
       {
         title: 'NovoAcademy Demo Bericht - Beauty Sensor',
