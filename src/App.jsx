@@ -353,8 +353,10 @@ const YT_EMBED_PARAMS = 'autoplay=1&mute=1&enablejsapi=1&rel=0&playsinline=1'
 function ytUnmuteOnLoad(e) {
   const win = e.target.contentWindow
   if (!win) return
+  // Target the exact YouTube origin (the iframe src is always www.youtube.com)
+  // rather than '*', so the player commands aren't broadcast to other windows.
   const cmd = (func, args = []) =>
-    win.postMessage(JSON.stringify({ event: 'command', func, args }), '*')
+    win.postMessage(JSON.stringify({ event: 'command', func, args }), 'https://www.youtube.com')
   // YouTube IFrame API needs ~200-600ms to be ready; we try a few times.
   let tries = 0
   const tick = () => {
